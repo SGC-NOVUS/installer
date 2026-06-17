@@ -21,9 +21,12 @@ var allowedOS = map[string]map[string]struct{}{
 	"ubuntu": {
 		"22.04": {},
 		"24.04": {},
+		"26.04": {},
+		"26.10": {},
 	},
 	"debian": {
 		"12": {},
+		"13": {},
 	},
 }
 

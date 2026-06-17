@@ -38,6 +38,11 @@ func main() {
 
 	result, err := preflight.Run(checkCtx, preflight.Options{DevMode: *devMode})
 	if err != nil {
+		// Print banner even on preflight failure — user may need --dev flag.
+		token, tokenErr := generateToken()
+		if tokenErr == nil {
+			printBannerFallback(token, *devMode, *dryRun, err)
+		}
 		log.Fatalf("novus-installer preflight failed: %v", err)
 	}
 
@@ -91,6 +96,30 @@ func generateToken() (string, error) {
 	}
 
 	return hex.EncodeToString(raw), nil
+}
+
+func printBannerFallback(token string, devMode bool, dryRun bool, preflightErr error) {
+	hostHint := detectHostHint()
+	installerURL := fmt.Sprintf("http://%s%s/?token=%s", hostHint, listenAddr, token)
+
+	_, _ = fmt.Fprintf(os.Stdout, "\n")
+	_, _ = fmt.Fprintf(os.Stdout, "============================================================\n")
+	_, _ = fmt.Fprintf(os.Stdout, " NOVUS-OS Installer: Pre-flight FAILED\n")
+	_, _ = fmt.Fprintf(os.Stdout, "============================================================\n")
+	_, _ = fmt.Fprintf(os.Stdout, " Error: %v\n", preflightErr)
+	if !devMode {
+		_, _ = fmt.Fprintf(os.Stdout, "\n")
+		_, _ = fmt.Fprintf(os.Stdout, " TIP: Retry with --dev flag to bypass OS/RAM/port checks:\n")
+		_, _ = fmt.Fprintf(os.Stdout, "   sudo ./novus-installer --dev\n")
+		_, _ = fmt.Fprintf(os.Stdout, "\n")
+		_, _ = fmt.Fprintf(os.Stdout, " Or with dry-run to simulate without changes:\n")
+		_, _ = fmt.Fprintf(os.Stdout, "   sudo ./novus-installer --dev --dry-run\n")
+	}
+	_, _ = fmt.Fprintf(os.Stdout, "\n")
+	_, _ = fmt.Fprintf(os.Stdout, " Installer URL (use with --dev flag):\n")
+	_, _ = fmt.Fprintf(os.Stdout, "   %s\n", installerURL)
+	_, _ = fmt.Fprintf(os.Stdout, "\n")
+	_, _ = fmt.Fprintf(os.Stdout, "============================================================\n")
 }
 
 func printWarnings(result *preflight.Result) {
