@@ -1,19 +1,16 @@
 #!/usr/bin/env bash
 # =============================================================================
-# NOVUS Installer — Quick Install Script (PRIVATE REPO)
+# NOVUS Installer — Quick Install Script (PUBLIC REPO)
 # =============================================================================
-# Since SGC-NOVUS/installer is a PRIVATE repository, you must provide
-# a GitHub PAT with repo-read scope. Two methods:
+# The installer repository is PUBLIC. One-command install:
 #
-# Method A (env var):
-#   export NOVUS_INSTALLER_GITHUB_PAT="github_pat_..."
-#   curl -fsSL -H "Authorization: token ${NOVUS_INSTALLER_GITHUB_PAT}" \
-#     https://raw.githubusercontent.com/SGC-NOVUS/installer/main/install.sh | sudo -E bash
+#   curl -fsSL https://raw.githubusercontent.com/SGC-NOVUS/installer/main/install.sh | sudo bash
 #
-# Method B (download + run):
-#   curl -fsSL -H "Authorization: token GITHUB_PAT" \
-#     https://raw.githubusercontent.com/SGC-NOVUS/installer/main/install.sh -o install.sh
-#   sudo bash install.sh  (will prompt for PAT)
+# GitHub PAT is NOT needed for the installer itself — it will be requested
+# by the web UI during setup to download the private SGC-NOVUS/panel-core.
+# You can pre-set it via env to skip the prompt:
+#
+#   NOVUS_INSTALLER_GITHUB_PAT="github_pat_..." sudo -E bash install.sh
 # =============================================================================
 set -euo pipefail
 
@@ -39,17 +36,9 @@ esac
 
 log "NOVUS Installer — bootstrapping..."
 
-# NOVUS_INSTALLER_GITHUB_PAT can be set via env or piped via curl header.
-# If not set, prompt interactively.
+# GitHub PAT is only needed to download panel-core (PRIVATE repo).
+# It will be asked by the installer's web UI. You can pre-set it here:
 GITHUB_PAT="${NOVUS_INSTALLER_GITHUB_PAT:-}"
-if [[ -z "$GITHUB_PAT" ]]; then
-  read -rsp "Enter GitHub PAT for SGC-NOVUS/installer (private repo): " GITHUB_PAT
-  echo ""
-fi
-if [[ -z "$GITHUB_PAT" ]]; then
-  err "GitHub PAT is required to access private repository SGC-NOVUS/installer."
-  exit 1
-fi
 export NOVUS_INSTALLER_GITHUB_PAT="$GITHUB_PAT"
 
 # ── Check Go ───────────────────────────────────────────────────────────────
@@ -68,6 +57,16 @@ fi
 
 # ── Build installer ────────────────────────────────────────────────────────
 INSTALL_DIR="/tmp/novus-installer-build"
+rm -rf "$INSTALL_DIR"
+mkdir -p "$INSTALL_DIR"
+cd "$INSTALL_DIR"
+
+log "Cloning installer..."
+git clone --depth 1 https://github.com/SGC-NOVUS/installer.git .
+
+log "Building..."
+go build -trimpath -ldflags="-s -w" -o novus-installer ./cmd/installer
+ok "Build complete: $(du -h novus-installer | cut -f1)"
 rm -rf "$INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"

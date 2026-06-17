@@ -2,15 +2,19 @@
 
 `novus-installer` — standalone Go binary для первичного bootstrap и post-install оркестрации NOVUS-OS на bare-metal или VPS-хосте.
 
-## Установка одной командой (приватный репозиторий)
+## Установка одной командой (публичный репозиторий)
 
 ```bash
-# Замените GITHUB_PAT на ваш токен
-curl -fsSL -H "Authorization: token GITHUB_PAT" \
-  https://raw.githubusercontent.com/SGC-NOVUS/installer/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/SGC-NOVUS/installer/main/install.sh | sudo bash
 ```
 
-При запуске скрипт запросит `GitHub PAT` (если не передан через `NOVUS_INSTALLER_GITHUB_PAT`) для клонирования приватного репозитория.
+GitHub PAT **не нужен** для скачивания установщика. PAT потребуется позже — веб-интерфейс запросит его для доступа к приватному `SGC-NOVUS/panel-core`.
+
+Можно передать PAT заранее через переменную окружения:
+
+```bash
+NOVUS_INSTALLER_GITHUB_PAT="github_pat_..." sudo -E bash install.sh
+```
 
 Или вручную:
 
