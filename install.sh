@@ -36,7 +36,8 @@ esac
 
 log "NOVUS Installer — bootstrapping..."
 
-# Use NOVUS_INSTALLER_GITHUB_PAT if set, otherwise prompt.
+# NOVUS_INSTALLER_GITHUB_PAT can be set via env or piped via curl header.
+# If not set, prompt interactively.
 GITHUB_PAT="${NOVUS_INSTALLER_GITHUB_PAT:-}"
 if [[ -z "$GITHUB_PAT" ]]; then
   read -rsp "Enter GitHub PAT for SGC-NOVUS/installer (private repo): " GITHUB_PAT
