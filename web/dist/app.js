@@ -2011,6 +2011,7 @@ async function bootstrap() {
           DBRootPassword: form.dbRootPassword,
           DBPanelPassword: form.dbPanelPassword,
           GitHubPAT: String(form.githubPat || '').trim() || (typeof NOVUS_INSTALLER_GITHUB_PAT !== 'undefined' ? String(NOVUS_INSTALLER_GITHUB_PAT).trim() : ''),
+          github_pat: String(form.githubPat || '').trim() || (typeof NOVUS_INSTALLER_GITHUB_PAT !== 'undefined' ? String(NOVUS_INSTALLER_GITHUB_PAT).trim() : ''),
           MasterKeyMode: form.masterKeyMode,
           MasterKey: form.masterKey,
           MasterKeyBackend: form.masterKeyBackend,
