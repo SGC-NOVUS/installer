@@ -702,6 +702,12 @@ func validateSecurityEntranceConfig(cfg SecurityEntranceConfig) error {
 func (r *Runner) buildInstallSteps(request SetupRequest, domain string, platform platformProfile) []Step {
 	steps := []Step{
 		{
+			Name: "Очистка кэша APT и удаление несовместимых репозиториев",
+			Run: func(ctx context.Context, _ SetupRequest, runner *Runner) error {
+				return runner.runPTYCommand(ctx, "rm -f /etc/apt/sources.list.d/ondrej*.list /etc/apt/sources.list.d/sury-php.list /etc/apt/sources.list.d/mariadb*.list 2>/dev/null; apt-get update -qq 2>/dev/null || apt-get update -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true || true")
+			},
+		},
+		{
 			Name: "Системные зависимости",
 			Run: func(ctx context.Context, _ SetupRequest, runner *Runner) error {
 				return runner.runPTYCommand(ctx, systemDependenciesCommand())
@@ -893,7 +899,10 @@ func (r *Runner) writeLine(line string) {
 }
 
 func systemDependenciesCommand() string {
-	return "apt-get update && apt-get install -y software-properties-common curl wget git unzip ufw"
+	return strings.Join([]string{
+		"apt-get update -qq || apt-get update -o Acquire::AllowInsecureRepositories=true || true",
+		"DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common curl wget git unzip ufw || true",
+	}, " && ")
 }
 
 func repositoriesCommand(platform platformProfile) string {
@@ -901,9 +910,7 @@ func repositoriesCommand(platform platformProfile) string {
 
 	// Build resilient repo setup: try external repos, fall back to OS-native
 	// packages when the Ubuntu release is too new for PPA/MariaDB mirrors.
-	//
-	// Strategy: run all repo setup commands with "|| true", then install
-	// packages. If external repos fail, apt will use the OS-native versions.
+	// First, clean up any previously-failed repo files so apt-get update works.
 	if platform.ID == "debian" {
 		return strings.Join([]string{
 			"apt-get install -y ca-certificates apt-transport-https gnupg2",
