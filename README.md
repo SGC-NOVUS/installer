@@ -5,7 +5,7 @@
 ## Установка одной командой
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/SGC-NOVUS/novus-installer/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/SGC-NOVUS/installer/main/install.sh | sudo bash
 ```
 
 Или вручную:

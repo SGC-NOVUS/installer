@@ -53,7 +53,7 @@ mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
 log "Cloning novus-installer..."
-git clone --depth 1 https://github.com/SGC-NOVUS/novus-installer.git .
+git clone --depth 1 https://github.com/SGC-NOVUS/installer.git .
 
 log "Building..."
 go build -trimpath -ldflags="-s -w" -o novus-installer ./cmd/installer
