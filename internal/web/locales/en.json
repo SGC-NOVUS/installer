@@ -1,0 +1,444 @@
+{
+  "app": {
+    "eyebrow": "NOVUS-OS Installer"
+  },
+  "common": {
+    "back": "Back",
+    "continue": "Continue",
+    "start": "Install",
+    "restart": "Start again",
+    "basic": "Basic",
+    "advanced": "Advanced",
+    "comingSoon": "Coming soon",
+    "recommended": "Recommended",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "generate": "Generate",
+    "preview": "Preview",
+    "optional": "Optional",
+    "close": "Close",
+    "cancel": "Cancel",
+    "save": "Save",
+    "disable": "Disable",
+    "toggleTheme": "Toggle theme",
+    "themeLight": "Switch to light theme",
+    "themeDark": "Switch to dark theme",
+    "themeModeLight": "Light",
+    "themeModeDark": "Dark"
+  },
+  "wizard": {
+    "title": "NOVUS-OS Installation",
+    "description": "Complete setup in guided steps and start NOVUS-OS installation.",
+    "helpAria": "Show help",
+    "steps": {
+      "welcome": "Welcome",
+      "mode": "Mode",
+      "domain": "Domain & SSL",
+      "admin": "Admin Profile",
+      "database": "Database",
+      "security": "Security Perimeter",
+      "integrations": "Integrations"
+    },
+    "viewModeTitle": "Form view mode",
+    "viewModeBody": "Basic shows required fields only.",
+    "welcome": {
+      "title": "Welcome to NOVUS-OS Installer",
+      "body": "We will guide you through installation mode, panel access, and security settings step by step.",
+      "defaults": "Session",
+      "heroTitle": "Installation is ready to begin",
+      "heroBody": "You can adjust all values while moving through the wizard. Start now and choose New Install or Restore.",
+      "cta": "Start installation",
+      "restoreCta": "Switch to restore",
+      "footer": ""
+    },
+    "mode": {
+      "title": "Choose installation mode",
+      "body": "Select whether this node is a fresh install or a restore from backup.",
+      "footer": "",
+      "freshTitle": "New Install",
+      "freshBody": "Prepare a clean panel deployment with databases, agent, and web stack.",
+      "restoreTitle": "Restore",
+      "restoreBody": "Restore panel configuration from a previously exported bundle.",
+      "restoreHint": "Restore settings are applied during installation."
+    },
+    "restore": {
+      "liveBadge": "Live",
+      "sourceTitle": "Restore source",
+      "sourceBody": "Choose where to load your panel backup from: URL or local file.",
+      "sourceUrl": "URL",
+      "sourceUpload": "Upload",
+      "sourcePaste": "Paste",
+      "bundleUrl": "Backup URL",
+      "bundleUrlPlaceholder": "https://backup.example.com/novus-export.sgcenc.json",
+      "bundleUpload": "Backup file",
+      "bundleUploadHint": "Choose a local panel backup file.",
+      "bundlePayload": "Inline backup payload",
+      "bundlePayloadPlaceholder": "Paste the full encrypted NOVUS export envelope here.",
+      "importModeTitle": "Restore scenario",
+      "importModeBody": "After key validation, choose how backup data should be applied.",
+      "importOverwrite": "Full restore",
+      "importSkip": "Restore with adjustments",
+      "importReportOnly": "Report only (no changes)",
+      "keyTitle": "Decrypt and unlock",
+      "keyBody": "Upload the key file and enter its password. If your key is not encrypted, you can use manual key material or recovery phrase.",
+      "keyMaterial": "Manual key input (optional)",
+      "keyMaterialPlaceholder": "Paste key material if you do not use a key file.",
+      "keyFile": "Backup cryptographic key file",
+      "keyFileHint": "Upload your restore key file.",
+      "keyPassword": "Key file password",
+      "keyPasswordPlaceholder": "Enter password to unlock key file",
+      "recoveryPhrase": "Recovery phrase",
+      "recoveryPhrasePlaceholder": "Paste the operator recovery phrase used for the export.",
+      "summarySource": "Selected source",
+      "summaryMode": "Import mode",
+      "summaryKey": "Key status",
+      "keyReady": "Key is ready for validation",
+      "keyNeeded": "Key material or password is required",
+      "footer": ""
+    },
+    "domain": {
+      "title": "Domain and certificate",
+      "body": "Set domain or IP access for panel login and choose SSL strategy.",
+      "footer": "",
+      "field": "Panel URL or domain",
+      "placeholder": "project.com or panel.your-domain.com",
+      "domainHelp": "Enter the domain you want to use, for example: project.com. You can also use an alias like panel.your-domain.com. If a domain is not available yet, you can use the panel server IP.",
+      "domainTip": "Examples: project.com, panel.project.com, or 203.0.113.10",
+      "ipDetectedTitle": "IP address detected",
+      "ipDetectedBody": "When using direct IP access, it is recommended to enable Security Entrance for additional protection.",
+      "ipDetectedNote": "You can later switch to a domain and issue a certificate from panel settings.",
+      "enableSecurityEntrance": "Enable Security Entrance",
+      "sslTitle": "SSL certificate strategy",
+      "cloudflareToken": "Cloudflare API Token",
+      "cloudflarePlaceholder": "Paste your Cloudflare API token",
+      "customCertificate": "Certificate body",
+      "customCertificatePlaceholder": "-----BEGIN CERTIFICATE-----",
+      "customPrivateKey": "Private key",
+      "customPrivateKeyPlaceholder": "-----BEGIN PRIVATE KEY-----",
+      "securityEntrance": {
+        "title": "Security Entrance",
+        "body": "Hide panel access behind a secret path and optional dedicated port with brute-force protection limits.",
+        "path": "Secret path",
+        "pathPlaceholder": "gate-control",
+        "pathHelp": "This is the secret URL segment required for panel entry.",
+        "port": "External listener port",
+        "portPlaceholder": "Leave empty to reuse the standard port",
+        "portHelp": "Optional separate port for panel entry. Leave empty to keep default.",
+        "window": "Rate-limit window seconds",
+        "windowHelp": "Time window used to count failed login attempts.",
+        "attempts": "Max attempts",
+        "attemptsHelp": "Allowed login attempts within the rate-limit window before lockout.",
+        "block": "Block duration seconds",
+        "blockHelp": "How long access is blocked after max attempts is reached.",
+        "entryPath": "External path",
+        "cookiePath": "Cookie path",
+        "disabledState": "Disabled"
+      },
+      "sslOptions": {
+        "letsencrypt": {
+          "title": "Let's Encrypt (Automatic)",
+          "body": "Issue and configure the certificate automatically during installation."
+        },
+        "cloudflare": {
+          "title": "Cloudflare SSL",
+          "body": "Use DNS validation through Cloudflare with your API token."
+        },
+        "custom": {
+          "title": "Custom certificate",
+          "body": "Provide your own certificate and private key for immediate use."
+        }
+      }
+    },
+    "admin": {
+      "title": "Administrator profile",
+      "body": "Create the first administrator account. Login is auto-generated from email and can be edited manually.",
+      "footer": "",
+      "email": "Administrator email",
+      "emailPlaceholder": "name{'@'}your-domain.com",
+      "login": "Administrator login",
+      "loginPlaceholder": "admin",
+      "loginHint": "By default login is derived from email before {'@'}, but you can override it.",
+      "password": "Administrator password",
+      "passwordPlaceholder": "Strong password",
+      "confirmPassword": "Confirm password",
+      "confirmPasswordPlaceholder": "Repeat the administrator password",
+      "generateAndCopy": "Generate & copy",
+      "readinessTitle": "Readiness check",
+      "readinessBody": "Validate the handoff that will be used for the first privileged login and panel bootstrap.",
+      "confirmationStatus": "Confirmation",
+      "passwordsMatch": "Passwords match",
+      "passwordsMismatch": "Passwords do not match yet",
+      "passwordCopied": "Administrator password generated and copied to clipboard.",
+      "strength": {
+        "length": "12+ chars",
+        "upper": "A-Z",
+        "lower": "a-z",
+        "digit": "0-9",
+        "special": "Special char"
+      }
+    },
+    "database": {
+      "title": "Database settings",
+      "body": "Set the MariaDB passwords for the system administrator and panel before migrations start.",
+      "footer": "The installer prepares separate NOVUS OS, identity, and service desk databases.",
+      "rootPassword": "MariaDB administrator password",
+      "panelPassword": "Panel database password",
+      "rootPlaceholder": "MariaDB administrator password",
+      "panelPlaceholder": "Panel database password",
+      "generateAndCopy": "Generate & copy",
+      "passwordCopied": "Database password generated and copied to clipboard.",
+      "startInstall": "Start installation",
+      "summaryTitle": "Databases",
+      "summaryBody": "These databases are created during installation.",
+      "osDatabase": "OS database",
+      "identityDatabase": "Identity database",
+      "serviceDeskDatabase": "Service desk database"
+    },
+    "security": {
+      "title": "Keys and KMS",
+      "body": "Choose how to prepare the master key and, if needed, an external KMS.",
+      "footer": "Key and KMS settings are applied by the installer during deployment.",
+      "hybridTitle": "Automatic key management",
+      "hybridBody": "The installer generates the master key and configures the default backend automatically.",
+      "manualTitle": "Manual key input",
+      "manualBody": "Provide the master key manually in hex or base64.",
+      "cloudflareTitle": "Cloudflare KMS",
+      "cloudflareBody": "Use a Cloudflare Worker for master-key operations.",
+      "tpm2Title": "TPM2",
+      "tpm2Body": "Use TPM2 when the target server supports hardware key protection.",
+      "manualMaterialTitle": "Manual master key",
+      "manualMaterialBody": "Generate a key or paste an existing value.",
+      "manualGenerate": "Generate material",
+      "manualFormat": "Manual key format",
+      "manualHex": "Hex",
+      "manualBase64": "Base64",
+      "keyLabel": "Master Key",
+      "keyPlaceholder": "Paste master-key material",
+      "cloudflareConfigTitle": "Cloudflare KMS settings",
+      "cloudflareConfigBody": "Provide the credentials and worker endpoint for Cloudflare KMS.",
+      "cloudflareToken": "Cloudflare API Token",
+      "cloudflareTokenPlaceholder": "Leave empty to reuse the SSL token when applicable",
+      "cloudflareReuseSsl": "If left empty, the installer reuses the SSL Cloudflare token when available.",
+      "cloudflareAccountId": "Cloudflare account ID",
+      "cloudflareAccountPlaceholder": "Cloudflare account identifier",
+      "cloudflareWorkerUrl": "Worker URL",
+      "cloudflareWorkerPlaceholder": "https://novus-kms.example.workers.dev",
+      "cloudflareAdvancedTitle": "Advanced worker settings",
+      "cloudflareAdvancedBody": "Specify script, namespace, and route only when required.",
+      "cloudflareScriptName": "Worker script name",
+      "cloudflareNamespaceTitle": "KV namespace title",
+      "cloudflareZoneId": "Zone ID",
+      "cloudflareZonePlaceholder": "Optional zone identifier",
+      "cloudflareRoutePattern": "Route pattern",
+      "cloudflareRoutePlaceholder": "Optional route pattern such as kms.example.com/*",
+      "summaryTitle": "Key configuration summary",
+      "summaryBackend": "Backend",
+      "summaryMode": "Mode",
+      "summaryAutomatic": "Automatic generation",
+      "hint": "The installer writes environment settings, master-key material, and optional shared secrets in a compatible layout."
+    },
+    "integrations": {
+      "title": "Integrations",
+      "body": "Save external providers now if they should be available on first start.",
+      "footer": "Only enabled providers with complete required fields are sent in the installer payload.",
+      "catalogTitle": "Providers",
+      "catalogBody": "Open the provider side menu, choose an integration, and configure it in the modal.",
+      "selectLabel": "Select integration",
+      "addSelected": "Add or configure integration",
+      "openProviderMenu": "Add provider",
+      "providerLibraryTitle": "Available providers",
+      "providerLibraryBody": "Choose a provider from this side menu. The settings modal opens above this list.",
+      "availableCount": "Available providers",
+      "sidebarTitle": "Configured integrations",
+      "sidebarEmpty": "No integrations added yet.",
+      "quickStatusReady": "Ready",
+      "quickStatusIncomplete": "Needs fields",
+      "startInstall": "Start installation",
+      "configured": "Configured",
+      "notConfigured": "Not configured",
+      "configuredCount": "Configured providers",
+      "fieldSet": "fields",
+      "configure": "Configure",
+      "add": "Add",
+      "modalEyebrow": "Provider settings",
+      "enableTitle": "Enable provider",
+      "enableBody": "Only enabled providers are serialized into the setup request.",
+      "categories": {
+        "operations": "Operations",
+        "identity": "Identity",
+        "network": "Network",
+        "automation": "Automation",
+        "ai": "AI",
+        "agents": "Agents",
+        "edge": "Edge",
+        "commerce": "Commerce",
+        "delivery": "Delivery"
+      },
+      "invalidProvider": "Fill all required fields before enabling this provider.",
+      "providers": {
+        "telegram": {
+          "title": "Telegram Global Bot",
+          "description": "Primary global Telegram bot for installer notifications and runtime alerts.",
+          "fields": {
+            "clientId": "Telegram Client ID",
+            "clientIdPlaceholder": "Telegram OAuth client ID",
+            "token": "Bot token",
+            "tokenPlaceholder": "Telegram bot token",
+            "adminId": "Administrator chat ID",
+            "adminIdPlaceholder": "Telegram administrator chat ID",
+            "oauthToken": "Telegram OAuth2 token",
+            "oauthTokenPlaceholder": "Telegram OAuth2 token"
+          }
+        },
+        "discordNotifications": {
+          "title": "Discord Global Bot",
+          "description": "Primary global Discord bot for notifications and operational messages.",
+          "fields": {
+            "token": "Bot token",
+            "tokenPlaceholder": "Discord bot token",
+            "adminId": "Administrator ID",
+            "adminIdPlaceholder": "Discord administrator ID",
+            "oauthToken": "Discord OAuth2 token",
+            "oauthTokenPlaceholder": "Discord OAuth2 token"
+          }
+        },
+        "google": {
+          "title": "Google OAuth",
+          "description": "Preconfigure Google as an identity provider for operator sign-in.",
+          "fields": {
+            "clientId": "Client ID",
+            "clientIdPlaceholder": "Google OAuth client ID",
+            "clientSecret": "Client secret",
+            "clientSecretPlaceholder": "Google OAuth client secret"
+          }
+        },
+        "github": {
+          "title": "GitHub OAuth",
+          "description": "Preconfigure GitHub sign-in for teams already anchored on GitHub org identity.",
+          "fields": {
+            "clientId": "Client ID",
+            "clientIdPlaceholder": "GitHub OAuth client ID",
+            "clientSecret": "Client secret",
+            "clientSecretPlaceholder": "GitHub OAuth client secret"
+          }
+        },
+        "githubCli": {
+          "title": "GitHub CLI Token",
+          "description": "Store GitHub Personal Access Token for GitOps, automation, and CLI tasks.",
+          "fields": {
+            "pat": "Personal access token",
+            "patPlaceholder": "ghp_xxxxxxxxxxxxxxxxxxxx"
+          }
+        },
+        "gemini": {
+          "title": "Gemini AI",
+          "description": "Configure Google Gemini API key for panel AI integrations.",
+          "fields": {
+            "apiKey": "Gemini API key",
+            "apiKeyPlaceholder": "AIza..."
+          }
+        },
+        "discord": {
+          "title": "Discord OAuth",
+          "description": "Enable Discord as an identity provider separate from notification transport.",
+          "fields": {
+            "clientId": "Client ID",
+            "clientIdPlaceholder": "Discord OAuth client ID",
+            "clientSecret": "Client secret",
+            "clientSecretPlaceholder": "Discord OAuth client secret"
+          }
+        },
+        "cloudflare": {
+          "title": "Cloudflare Provider",
+          "description": "Persist Cloudflare API credentials for DNS, edge, and worker-driven platform services.",
+          "fields": {
+            "apiToken": "API token",
+            "apiTokenPlaceholder": "Cloudflare API token",
+            "accountId": "Account ID",
+            "accountIdPlaceholder": "Cloudflare account ID"
+          }
+        },
+        "steam": {
+          "title": "Steam",
+          "description": "Store Steam Web API credentials for future catalog or identity workflows.",
+          "fields": {
+            "apiKey": "Steam Web API key",
+            "apiKeyPlaceholder": "Steam Web API key"
+          }
+        },
+        "smtp": {
+          "title": "SMTP Mail Relay",
+          "description": "Prime outbound mail with a real SMTP relay instead of leaving panel mail transport for later.",
+          "fields": {
+            "host": "SMTP host",
+            "hostPlaceholder": "smtp.example.com",
+            "port": "SMTP port",
+            "portPlaceholder": "587",
+            "user": "SMTP user",
+            "userPlaceholder": "smtp-user",
+            "password": "SMTP password",
+            "passwordPlaceholder": "SMTP password",
+            "fromName": "From name",
+            "fromNamePlaceholder": "NOVUS Control Plane",
+            "fromEmail": "From email",
+            "fromEmailPlaceholder": "noreply{'@'}example.com",
+            "secure": "Transport security",
+            "secureOptions": {
+              "tls": "TLS",
+              "ssl": "SSL",
+              "plain": "Plain"
+            }
+          }
+        },
+        "novusAgent": {
+          "title": "NOVUS Agent",
+          "description": "Configure NOVUS Agent installer URL and authorization header for agent bootstrap flows.",
+          "fields": {
+            "installerUrl": "Installer URL",
+            "installerUrlPlaceholder": "https://github.com/SGC-NOVUS/agent/releases/latest/download/novus-agent-linux-amd64",
+            "authHeader": "Authorization header",
+            "authHeaderPlaceholder": "Bearer <token>"
+          }
+        }
+      }
+    },
+    "summary": {
+      "mode": "Mode",
+      "target": "Target",
+      "targetPending": "Will be set on Domain step",
+      "admin": "Admin",
+      "adminPending": "Will be set on Admin step",
+      "ssl": "SSL",
+      "security": "Security"
+    }
+  },
+  "install": {
+    "eyebrow": "Installation",
+    "title": "NOVUS-OS installation in progress",
+    "waiting": "Preparing installation",
+    "connecting": "Connecting to the installation session",
+    "connected": "Connection established",
+    "reconnecting": "Reconnecting in 3 seconds",
+    "transport": "Streaming installation steps",
+    "failed": "Installation error",
+    "finished": "Installation completed",
+    "target": "Target",
+    "admin": "Admin",
+    "streamReady": "Waiting for PTY live stream..."
+  },
+  "success": {
+    "eyebrow": "Installation Complete",
+    "title": "Installation finished successfully",
+    "body": "The panel is installed and the secure sign-in URL is ready.",
+    "openPanel": "Open panel"
+  },
+  "errors": {
+    "setupFailed": "Unable to start the installation.",
+    "localeLoad": "Unable to load interface translations. English will be used instead.",
+    "restoreDisabled": "Restore mode requires a valid source and unlock material.",
+    "restoreFileRead": "Unable to read the selected restore file.",
+    "clipboard": "Unable to copy to clipboard in this browser context.",
+    "integrationInvalid": "Fill all required provider fields before saving.",
+    "securityEntranceInvalid": "Security Entrance path must be a valid non-reserved token when enabled."
+  }
+}

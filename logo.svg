@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="novus-logo-gradient" x1="10" y1="8" x2="38" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#06b6d4"/>
+      <stop offset="1" stop-color="#22c55e"/>
+    </linearGradient>
+  </defs>
+  <rect x="6" y="6" width="36" height="36" rx="12" fill="#0f172a"/>
+  <path d="M17 33V15h4.7l9.1 11.7V15H35v18h-4.7l-9.1-11.8V33H17Z" fill="url(#novus-logo-gradient)"/>
+  <circle cx="35.5" cy="13" r="3" fill="#38bdf8"/>
+</svg>
