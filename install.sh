@@ -67,16 +67,11 @@ git clone --depth 1 https://github.com/SGC-NOVUS/installer.git .
 log "Building..."
 go build -trimpath -ldflags="-s -w" -o novus-installer ./cmd/installer
 ok "Build complete: $(du -h novus-installer | cut -f1)"
-rm -rf "$INSTALL_DIR"
-mkdir -p "$INSTALL_DIR"
-cd "$INSTALL_DIR"
 
-log "Cloning installer from private repo..."
-git clone --depth 1 "https://oauth2:${GITHUB_PAT}@github.com/SGC-NOVUS/installer.git" .
-
-log "Building..."
-go build -trimpath -ldflags="-s -w" -o novus-installer ./cmd/installer
-ok "Build complete: $(du -h novus-installer | cut -f1)"
+# ── Install to system ──────────────────────────────────────────────────────
+cp novus-installer /usr/local/bin/novus-installer
+chmod +x /usr/local/bin/novus-installer
+ok "Installed to /usr/local/bin/novus-installer"
 
 # ── Run ────────────────────────────────────────────────────────────────────
 log "Starting installer..."
@@ -89,21 +84,10 @@ if [[ -n "${NOVUS_INSTALLER_GITHUB_PAT:-}" ]]; then
   export NOVUS_INSTALLER_GITHUB_PAT
 fi
 
-# Copy to /usr/local/bin so user can run from anywhere.
-cp novus-installer /usr/local/bin/novus-installer
-chmod +x /usr/local/bin/novus-installer
-
 log ""
 log "=============================================="
-log " Build complete. Binary installed to:"
-log "   /usr/local/bin/novus-installer"
-log ""
-log " Run the installer:"
-log ""
-log "   sudo env NOVUS_INSTALLER_GITHUB_PAT=\"github_pat_...\" novus-installer --dev"
-log ""
-log " If ports 80/443 are in use, add --dev:"
-log "   sudo env NOVUS_INSTALLER_GITHUB_PAT=\"github_pat_...\" novus-installer --dev"
+log " Build complete."
+log " Run: sudo env NOVUS_INSTALLER_GITHUB_PAT=\"github_pat_...\" novus-installer --dev"
 log "=============================================="
 log ""
 
