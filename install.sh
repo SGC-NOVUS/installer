@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 # =============================================================================
-# NOVUS Installer — Quick Install Script
+# NOVUS Installer — Quick Install Script (PRIVATE REPO)
 # =============================================================================
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/SGC-NOVUS/novus-installer/main/install.sh | sudo bash
+#   # Pipe via curl (requires PAT for private repo):
+#   curl -fsSL -H "Authorization: token GITHUB_PAT" \
+#     https://raw.githubusercontent.com/SGC-NOVUS/installer/main/install.sh | sudo bash
 #
-# Or with GitHub PAT:
-#   curl -fsSL ... | sudo NOVUS_INSTALLER_GITHUB_PAT="github_pat_..." bash
+#   # Or download + run:
+#   curl -fsSL -H "Authorization: token GITHUB_PAT" \
+#     https://raw.githubusercontent.com/SGC-NOVUS/installer/main/install.sh -o install.sh
+#   sudo NOVUS_INSTALLER_GITHUB_PAT="github_pat_..." bash install.sh
 # =============================================================================
 set -euo pipefail
 
@@ -32,6 +36,18 @@ esac
 
 log "NOVUS Installer — bootstrapping..."
 
+# Use NOVUS_INSTALLER_GITHUB_PAT if set, otherwise prompt.
+GITHUB_PAT="${NOVUS_INSTALLER_GITHUB_PAT:-}"
+if [[ -z "$GITHUB_PAT" ]]; then
+  read -rsp "Enter GitHub PAT for SGC-NOVUS/installer (private repo): " GITHUB_PAT
+  echo ""
+fi
+if [[ -z "$GITHUB_PAT" ]]; then
+  err "GitHub PAT is required to access private repository SGC-NOVUS/installer."
+  exit 1
+fi
+export NOVUS_INSTALLER_GITHUB_PAT="$GITHUB_PAT"
+
 # ── Check Go ───────────────────────────────────────────────────────────────
 if command -v go >/dev/null 2>&1; then
   ok "Go detected: $(go version)"
@@ -52,8 +68,8 @@ rm -rf "$INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
-log "Cloning novus-installer..."
-git clone --depth 1 https://github.com/SGC-NOVUS/installer.git .
+log "Cloning installer from private repo..."
+git clone --depth 1 "https://oauth2:${GITHUB_PAT}@github.com/SGC-NOVUS/installer.git" .
 
 log "Building..."
 go build -trimpath -ldflags="-s -w" -o novus-installer ./cmd/installer
