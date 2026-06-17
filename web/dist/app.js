@@ -905,6 +905,12 @@ function buildTerminalTheme(isDark) {
       cyan: '#22d3ee',
       white: '#e2e8f0',
       brightBlack: '#475569',
+      brightRed: '#ff9999',
+      brightGreen: '#86efac',
+      brightYellow: '#fde047',
+      brightBlue: '#93c5fd',
+      brightMagenta: '#d8b4fe',
+      brightCyan: '#67e8f9',
       brightWhite: '#f8fafc'
     };
   }
@@ -923,6 +929,12 @@ function buildTerminalTheme(isDark) {
     cyan: '#0f766e',
     white: '#e2e8f0',
     brightBlack: '#64748b',
+    brightRed: '#f87171',
+    brightGreen: '#4ade80',
+    brightYellow: '#eab308',
+    brightBlue: '#60a5fa',
+    brightMagenta: '#c084fc',
+    brightCyan: '#2dd4bf',
     brightWhite: '#111827'
   };
 }

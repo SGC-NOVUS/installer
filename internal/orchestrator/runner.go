@@ -749,7 +749,11 @@ func (r *Runner) buildInstallSteps(request SetupRequest, domain string, platform
 		{
 			Name: "Развертывание кода Панели",
 			Run: func(ctx context.Context, req SetupRequest, runner *Runner) error {
-				return runner.runPTYCommand(ctx, panelDeploymentCommand(runner.panelReleaseURL, req.GitHubPAT))
+				url := runner.panelReleaseURL
+				if strings.TrimSpace(url) == "" {
+					return fmt.Errorf("panel_release_url_missing: set NOVUS_INSTALLER_PANEL_RELEASE_URL or provide github_pat for private SGC-NOVUS/panel-core access")
+				}
+				return runner.runPTYCommand(ctx, panelDeploymentCommand(url, req.GitHubPAT))
 			},
 		},
 		{
