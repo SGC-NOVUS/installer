@@ -180,7 +180,8 @@ type SetupRequest struct {
 	MasterKeyMode      string
 	MasterKey          string
 	MasterKeyBackend   string
-	GitHubPAT          string `json:"github_pat"` // GitHub personal access token for private panel-core repo
+	GitHubPAT          string `json:"github_pat"` // GitHub PAT: backend receives as "github_pat" (via env) or "GitHubPAT" (from web form)
+	GitHubPATAlt       string `json:"GitHubPAT"`   // Web form sends this casing — will be merged in Validate()
 	SecurityEntrance   SecurityEntranceConfig
 	Restore            RestoreConfig
 	CloudflareKMS      CloudflareKMSConfig
@@ -380,6 +381,11 @@ func (r *Runner) removeInstallerArtifacts(paths ...string) error {
 }
 
 func (req SetupRequest) Validate() error {
+	// Merge GitHub PAT from both JSON casing variants.
+	if strings.TrimSpace(req.GitHubPAT) == "" && strings.TrimSpace(req.GitHubPATAlt) != "" {
+		req.GitHubPAT = req.GitHubPATAlt
+	}
+
 	checks := map[string]string{
 		"Domain":          req.Domain,
 		"AdminEmail":      req.AdminEmail,
