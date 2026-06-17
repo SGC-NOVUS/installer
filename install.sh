@@ -89,4 +89,22 @@ if [[ -n "${NOVUS_INSTALLER_GITHUB_PAT:-}" ]]; then
   export NOVUS_INSTALLER_GITHUB_PAT
 fi
 
-exec ./novus-installer
+# Copy to /usr/local/bin so user can run from anywhere.
+cp novus-installer /usr/local/bin/novus-installer
+chmod +x /usr/local/bin/novus-installer
+
+log ""
+log "=============================================="
+log " Build complete. Binary installed to:"
+log "   /usr/local/bin/novus-installer"
+log ""
+log " Run the installer:"
+log ""
+log "   sudo env NOVUS_INSTALLER_GITHUB_PAT=\"github_pat_...\" novus-installer --dev"
+log ""
+log " If ports 80/443 are in use, add --dev:"
+log "   sudo env NOVUS_INSTALLER_GITHUB_PAT=\"github_pat_...\" novus-installer --dev"
+log "=============================================="
+log ""
+
+exec novus-installer
