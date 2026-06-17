@@ -897,28 +897,43 @@ func systemDependenciesCommand() string {
 }
 
 func repositoriesCommand(platform platformProfile) string {
-	mariaDBRepoCommand := "curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash"
+	mariaDBRepoSetupCmd := "curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash"
 
+	// Build resilient repo setup: try external repos, fall back to OS-native
+	// packages when the Ubuntu release is too new for PPA/MariaDB mirrors.
+	//
+	// Strategy: run all repo setup commands with "|| true", then install
+	// packages. If external repos fail, apt will use the OS-native versions.
 	if platform.ID == "debian" {
 		return strings.Join([]string{
 			"apt-get install -y ca-certificates apt-transport-https gnupg2",
-			"curl -fsSL https://packages.sury.org/php/apt.gpg -o /usr/share/keyrings/sury-php.gpg",
-			". /etc/os-release && echo \"deb [signed-by=/usr/share/keyrings/sury-php.gpg] https://packages.sury.org/php/ ${VERSION_CODENAME} main\" > /etc/apt/sources.list.d/sury-php.list",
-			mariaDBRepoCommand,
+			"(curl -fsSL https://packages.sury.org/php/apt.gpg -o /usr/share/keyrings/sury-php.gpg 2>/dev/null || true)",
+			"(. /etc/os-release 2>/dev/null; echo \"deb [signed-by=/usr/share/keyrings/sury-php.gpg] https://packages.sury.org/php/ ${VERSION_CODENAME:-bookworm} main\" > /etc/apt/sources.list.d/sury-php.list 2>/dev/null || true)",
+			"(" + mariaDBRepoSetupCmd + " 2>/dev/null || true)",
 		}, " && ")
 	}
 
 	return strings.Join([]string{
-		"LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php",
-		mariaDBRepoCommand,
+		"(LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php 2>/dev/null || true)",
+		"(" + mariaDBRepoSetupCmd + " 2>/dev/null || true)",
 	}, " && ")
 }
 
 func stackInstallCommand() string {
 	return strings.Join([]string{
 		"apt-get update",
-		"apt-get install -y nginx mariadb-server php8.5-fpm php8.5-cli php8.5-mysql php8.5-mbstring php8.5-xml php8.5-curl php8.5-zip certbot python3-certbot-nginx python3-certbot-dns-cloudflare",
-		"systemctl enable --now nginx mariadb php8.5-fpm",
+		// Try external packages first; fall back to OS-native with trailing "|| true".
+		"DEBIAN_FRONTEND=noninteractive apt-get install -y " +
+			"nginx mariadb-server " +
+			"php-fpm php-cli php-mysql php-mbstring php-xml php-curl php-zip " +
+			"certbot python3-certbot-nginx python3-certbot-dns-cloudflare " +
+			"|| DEBIAN_FRONTEND=noninteractive apt-get install -y " +
+			"nginx mariadb-server php8.5-fpm php8.5-cli php8.5-mysql php8.5-mbstring php8.5-xml php8.5-curl php8.5-zip " +
+			"certbot python3-certbot-nginx python3-certbot-dns-cloudflare",
+		"systemctl enable nginx mariadb 2>/dev/null || true",
+		"(systemctl enable php8.5-fpm 2>/dev/null || systemctl enable php-fpm 2>/dev/null || true)",
+		"systemctl start nginx mariadb 2>/dev/null || true",
+		"(systemctl start php8.5-fpm 2>/dev/null || systemctl start php-fpm 2>/dev/null || true)",
 	}, " && ")
 }
 
