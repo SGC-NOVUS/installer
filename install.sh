@@ -2,15 +2,18 @@
 # =============================================================================
 # NOVUS Installer — Quick Install Script (PRIVATE REPO)
 # =============================================================================
-# Usage:
-#   # Pipe via curl (requires PAT for private repo):
-#   curl -fsSL -H "Authorization: token GITHUB_PAT" \
-#     https://raw.githubusercontent.com/SGC-NOVUS/installer/main/install.sh | sudo bash
+# Since SGC-NOVUS/installer is a PRIVATE repository, you must provide
+# a GitHub PAT with repo-read scope. Two methods:
 #
-#   # Or download + run:
+# Method A (env var):
+#   export NOVUS_INSTALLER_GITHUB_PAT="github_pat_..."
+#   curl -fsSL -H "Authorization: token ${NOVUS_INSTALLER_GITHUB_PAT}" \
+#     https://raw.githubusercontent.com/SGC-NOVUS/installer/main/install.sh | sudo -E bash
+#
+# Method B (download + run):
 #   curl -fsSL -H "Authorization: token GITHUB_PAT" \
 #     https://raw.githubusercontent.com/SGC-NOVUS/installer/main/install.sh -o install.sh
-#   sudo NOVUS_INSTALLER_GITHUB_PAT="github_pat_..." bash install.sh
+#   sudo bash install.sh  (will prompt for PAT)
 # =============================================================================
 set -euo pipefail
 
