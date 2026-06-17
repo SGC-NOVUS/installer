@@ -109,15 +109,14 @@ func printBannerFallback(token string, devMode bool, dryRun bool, preflightErr e
 	_, _ = fmt.Fprintf(os.Stdout, " Error: %v\n", preflightErr)
 	if !devMode {
 		_, _ = fmt.Fprintf(os.Stdout, "\n")
-		_, _ = fmt.Fprintf(os.Stdout, " TIP: Retry with --dev flag to bypass OS/RAM/port checks:\n")
-		_, _ = fmt.Fprintf(os.Stdout, "   sudo ./novus-installer --dev\n")
+		_, _ = fmt.Fprintf(os.Stdout, " \033[1;33m!!!\033[0m Ports 80/443 are already in use (nginx from previous install?).\n")
+		_, _ = fmt.Fprintf(os.Stdout, " \033[1;33m!!!\033[0m Retry with --dev flag to bypass port checks:\n")
 		_, _ = fmt.Fprintf(os.Stdout, "\n")
-		_, _ = fmt.Fprintf(os.Stdout, " Or with dry-run to simulate without changes:\n")
-		_, _ = fmt.Fprintf(os.Stdout, "   sudo ./novus-installer --dev --dry-run\n")
+		_, _ = fmt.Fprintf(os.Stdout, "   \033[1;32msudo ./novus-installer --dev\033[0m\n")
+		_, _ = fmt.Fprintf(os.Stdout, "\n")
 	}
-	_, _ = fmt.Fprintf(os.Stdout, "\n")
 	_, _ = fmt.Fprintf(os.Stdout, " Installer URL (use with --dev flag):\n")
-	_, _ = fmt.Fprintf(os.Stdout, "   %s\n", installerURL)
+	_, _ = fmt.Fprintf(os.Stdout, "   \033[1;36m%s\033[0m\n", installerURL)
 	_, _ = fmt.Fprintf(os.Stdout, "\n")
 	_, _ = fmt.Fprintf(os.Stdout, "============================================================\n")
 }

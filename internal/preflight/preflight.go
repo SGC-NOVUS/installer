@@ -158,14 +158,14 @@ func Run(ctx context.Context, options Options) (*Result, error) {
 	return result, nil
 }
 
-func isDevWarning(kind issueKind) bool {
-	switch kind {
-	case issueOS, issueRAM, issuePort:
-		return true
-	default:
-		return false
+	isDevWarning := func(kind issueKind) bool {
+		switch kind {
+		case issueOS, issueRAM, issuePort:
+			return true
+		default:
+			return false
+		}
 	}
-}
 
 func checkRoot() error {
 	if os.Geteuid() != 0 {
