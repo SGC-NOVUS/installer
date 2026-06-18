@@ -1080,9 +1080,7 @@ func stackInstallCommand() string {
 }
 
 func mariaDBConfigurationCommand(req SetupRequest) string {
-	// Write SQL to temp file, then pipe it. Avoid shell escaping nightmares.
-	// Also: if mariadb isn't installed yet (packages failed), this step is
-	// non-fatal — databases will be created by artisan migrate later.
+	// Write SQL to temp file using printf (no here-doc escaping issues).
 	safeRoot := escapeSQLLiteral(req.DBRootPassword)
 	safePanel := escapeSQLLiteral(req.DBPanelPassword)
 	sql := fmt.Sprintf(
@@ -1096,12 +1094,11 @@ func mariaDBConfigurationCommand(req SetupRequest) string {
 		defaultSDDBName, defaultSystemDBUser,
 	)
 
-	// Write to temp file, then try mariadb or mysql. Non-fatal if DB not ready.
-	return strings.Join([]string{
-		"cat > /tmp/novus_db_setup.sql << 'NOVUS_SQL_EOF'\n" + sql + "\nNOVUS_SQL_EOF",
-		"(mariadb < /tmp/novus_db_setup.sql 2>/dev/null || mysql < /tmp/novus_db_setup.sql 2>/dev/null || true)",
-		"rm -f /tmp/novus_db_setup.sql",
-	}, " && ")
+	// Use printf to write SQL to file — avoids all here-doc and pipe escaping issues.
+	return fmt.Sprintf(
+		`(printf %%s %s > /tmp/novus_db_setup.sql && (mariadb < /tmp/novus_db_setup.sql 2>/dev/null || mysql < /tmp/novus_db_setup.sql 2>/dev/null || true) && rm -f /tmp/novus_db_setup.sql)`,
+		shellQuote(sql),
+	)
 }
 
 func agentInstallCommand(agentBinaryURL string) string {
@@ -1243,7 +1240,11 @@ func panelDeploymentCommand(panelReleaseURL string, githubPAT string) string {
 		"[ -s " + shellQuote(panelArchivePath) + " ]",
 		"test \"$(stat -c%s " + shellQuote(panelArchivePath) + ")\" -ge " + strconv.FormatInt(minPanelArchiveBytes, 10),
 		"unzip -tq " + shellQuote(panelArchivePath),
-		"unzip -oq " + shellQuote(panelArchivePath) + " -d " + shellQuote(panelInstallRoot),
+		// GitHub zipball extracts into a subdirectory (repo-branch/). Move contents up.
+		"unzip -oq " + shellQuote(panelArchivePath) + " -d /tmp/novus_panel_extract",
+		"EXTRACT_DIR=$(ls -d /tmp/novus_panel_extract/*/ 2>/dev/null | head -1)",
+		"[ -n \"$EXTRACT_DIR\" ] && rsync -a \"$EXTRACT_DIR\" " + shellQuote(panelInstallRoot) + "/ || unzip -oq " + shellQuote(panelArchivePath) + " -d " + shellQuote(panelInstallRoot),
+		"rm -rf /tmp/novus_panel_extract",
 		"chown -R www-data:www-data " + shellQuote(panelInstallRoot),
 	}, " && ")
 }
