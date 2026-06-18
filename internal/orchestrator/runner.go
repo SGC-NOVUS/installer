@@ -337,14 +337,15 @@ func (r *Runner) rollback(ctx context.Context, request SetupRequest, completed [
 			break
 		}
 	}
-	if !hasRollback {
+	if !hasRollback && len(completed) == 0 {
 		return
 	}
 
 	r.audit.Log(InstallAuditEvent{Event: "rollback_start"})
-	r.emitStatus(StatusMessage{Type: "step", Text: "Откат установочных артефактов"})
-	r.writeLine("\r\n\x1b[33m==> Откат установочных артефактов\x1b[0m\r\n")
+	r.emitStatus(StatusMessage{Type: "step", Text: "Полный откат установки — удаление всех артефактов"})
+	r.writeLine("\r\n\x1b[33m==> Полный откат установки\x1b[0m\r\n")
 
+	// 1. Per-step rollback handlers (reverse order).
 	for i := len(completed) - 1; i >= 0; i-- {
 		step := completed[i]
 		if step.Rollback == nil {
@@ -362,7 +363,66 @@ func (r *Runner) rollback(ctx context.Context, request SetupRequest, completed [
 		r.writeLine(fmt.Sprintf("\x1b[33m[ROLLBACK]\x1b[0m %s\r\n", step.Name))
 	}
 
+	// 2. Full cleanup: remove ALL installer artifacts unconditionally.
+	r.writeLine("\x1b[33m[ROLLBACK]\x1b[0m Полная очистка артефактов установки...\r\n")
+	if err := r.fullCleanup(ctx); err != nil {
+		r.writeLine(fmt.Sprintf("\x1b[31m[CLEANUP FAILED]\x1b[0m %s\r\n", err.Error()))
+		log.Printf("novus-installer full cleanup failed: %v", err)
+	} else {
+		r.writeLine("\x1b[33m[ROLLBACK]\x1b[0m Все артефакты удалены.\r\n")
+	}
+
 	r.audit.Log(InstallAuditEvent{Event: "rollback_complete"})
+}
+
+// fullCleanup removes all installer-created artifacts: panel root, DB data,
+// secrets, nginx configs, binary, manifest, etc. Runs on install failure.
+func (r *Runner) fullCleanup(ctx context.Context) error {
+	if r.dryRun {
+		r.writeLine("[DRY-RUN] Would remove all NOVUS-OS artifacts.\r\n")
+		return nil
+	}
+
+	// Stop services first.
+	for _, svc := range []string{"novus-agent", "php8.5-fpm", "php-fpm", "nginx"} {
+		_ = r.runPTYCommand(ctx, "systemctl stop "+svc+" 2>/dev/null || true")
+	}
+
+	// Wipe paths.
+	for _, path := range []string{
+		panelInstallRoot,    // /var/www/novus
+		panelSecretsDir,     // /etc/novus/secrets
+		manifestDir,         // /etc/novus
+		sslAssetDir,         // /etc/novus/ssl
+		nginxSitePath,       // nginx site config
+		nginxSiteEnabledPath,
+		panelArchivePath,    // /tmp/panel.zip
+		agentDownloadPath,   // /tmp/novus-agent
+	} {
+		if err := os.RemoveAll(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+			log.Printf("fullCleanup: remove %s: %v", path, err)
+		}
+	}
+
+	// Drop databases (if MariaDB is still running).
+	dropSQL := fmt.Sprintf(
+		"DROP DATABASE IF EXISTS %s; DROP DATABASE IF EXISTS %s; DROP DATABASE IF EXISTS %s; DROP USER IF EXISTS '%s'@'localhost'; DROP USER IF EXISTS '%s'@'localhost';",
+		defaultOSDBName, defaultIDDBName, defaultSDDBName,
+		defaultSystemDBUser, defaultIdentityDBUser,
+	)
+	_ = r.runPTYCommand(ctx, "mariadb -u root -e "+shellQuote(dropSQL)+" 2>/dev/null || true")
+
+	// Remove binary.
+	_ = os.Remove("/usr/local/bin/novus-agent")
+	_ = os.Remove("/usr/local/bin/novus-installer")
+	_ = os.Remove("/usr/local/bin/sgc-agent")
+
+	// Reload systemd.
+	_ = os.Remove("/etc/systemd/system/novus-agent.service")
+	_ = os.Remove("/etc/systemd/system/sgc-agent.service")
+	_ = r.runPTYCommand(ctx, "systemctl daemon-reload 2>/dev/null || true")
+
+	return nil
 }
 
 // removeInstallerArtifacts deletes installer-owned files created during this
