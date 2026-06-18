@@ -849,19 +849,19 @@ func (r *Runner) buildInstallSteps(request SetupRequest, domain string, platform
 				}
 				req.GitHubPAT = pat
 
-				url := runner.panelReleaseURL
-				if strings.TrimSpace(url) == "" {
+				panelURL := runner.panelReleaseURL
+				if strings.TrimSpace(panelURL) == "" {
 					// Build URL using the resolved PAT.
 					ref := strings.TrimSpace(os.Getenv("NOVUS_INSTALLER_PANEL_CORE_REF"))
 					if ref == "" {
 						ref = "main"
 					}
-					url = fmt.Sprintf("https://api.github.com/repos/%s/zipball/%s", panelCoreRepo, url.PathEscape(ref))
+					panelURL = fmt.Sprintf("https://api.github.com/repos/%s/zipball/%s", panelCoreRepo, url.PathEscape(ref))
 				}
-				if strings.TrimSpace(url) == "" {
+				if strings.TrimSpace(panelURL) == "" {
 					return fmt.Errorf("panel_release_url_missing: set NOVUS_INSTALLER_PANEL_RELEASE_URL or provide github_pat for private SGC-NOVUS/panel-core access")
 				}
-				return runner.runPTYCommand(ctx, panelDeploymentCommand(url, req.GitHubPAT))
+				return runner.runPTYCommand(ctx, panelDeploymentCommand(panelURL, req.GitHubPAT))
 			},
 		},
 		{
