@@ -413,7 +413,7 @@ func (r *Runner) fullCleanup(ctx context.Context) error {
 		defaultOSDBName, defaultIDDBName, defaultSDDBName,
 		defaultSystemDBUser, defaultIdentityDBUser,
 	)
-	_ = r.runPTYCommand(ctx, "mariadb -u root -e "+shellQuote(dropSQL)+" 2>/dev/null || true")
+	_ = r.runPTYCommand(ctx, "(mariadb -u root -e "+shellQuote(dropSQL)+" 2>/dev/null || mysql -u root -e "+shellQuote(dropSQL)+" 2>/dev/null || true)")
 
 	// Remove binary.
 	_ = os.Remove("/usr/local/bin/novus-agent")
@@ -1012,6 +1012,8 @@ func repositoriesCommand(platform platformProfile) string {
 	}
 
 	return strings.Join([]string{
+		// Remove any previously-failed PPA file that would block apt-get update.
+		"rm -f /etc/apt/sources.list.d/ondrej*.list /etc/apt/sources.list.d/ondrej*.sources 2>/dev/null",
 		"(LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php 2>/dev/null || true)",
 		"(" + mariaDBRepoSetupCmd + " 2>/dev/null || true)",
 	}, " && ")
@@ -1054,7 +1056,8 @@ func mariaDBConfigurationCommand(req SetupRequest) string {
 		defaultSystemDBUser,
 	)
 
-	return "mysql -e " + shellQuote(sql)
+	// Use mariadb (modern) with mysql fallback for older installs.
+	return "(mariadb -e " + shellQuote(sql) + " 2>/dev/null || mysql -e " + shellQuote(sql) + " 2>/dev/null)"
 }
 
 func agentInstallCommand(agentBinaryURL string) string {
