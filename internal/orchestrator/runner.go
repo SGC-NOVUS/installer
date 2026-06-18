@@ -810,6 +810,12 @@ func (r *Runner) buildInstallSteps(request SetupRequest, domain string, platform
 			},
 		},
 		{
+			Name: "Установка и настройка сервисов (Redis, Supervisor, Fail2Ban, UFW, Cron)",
+			Run: func(ctx context.Context, _ SetupRequest, runner *Runner) error {
+				return runner.runPTYCommand(ctx, servicesSetupCommand())
+			},
+		},
+		{
 			Name: "Установка novus-agent",
 			Run: func(ctx context.Context, _ SetupRequest, runner *Runner) error {
 				return runner.runPTYCommand(ctx, agentInstallCommand(runner.agentBinaryURL))
@@ -1015,14 +1021,21 @@ func repositoriesCommand(platform platformProfile) string {
 func stackInstallCommand() string {
 	return strings.Join([]string{
 		"apt-get update",
-		// Try PHP 8.5 packages first (from PPA). Fallback to OS-native only if 8.5 not found.
+		// Full stack: Nginx + MariaDB + PHP 8.5 + all extensions + Redis + tools + security.
 		"DEBIAN_FRONTEND=noninteractive apt-get install -y " +
 			"nginx mariadb-server " +
 			"php8.5-fpm php8.5-cli php8.5-mysql php8.5-mbstring php8.5-xml php8.5-curl php8.5-zip " +
+			"php8.5-bcmath php8.5-intl php8.5-gd php8.5-redis php8.5-grpc " +
+			"redis-server supervisor fail2ban ufw " +
 			"certbot python3-certbot-nginx python3-certbot-dns-cloudflare " +
+			"curl wget git unzip jq openssl ca-certificates gnupg openssh-server " +
 			"|| DEBIAN_FRONTEND=noninteractive apt-get install -y " +
 			"nginx mariadb-server php8.5-fpm php8.5-cli php8.5-mysql php8.5-mbstring php8.5-xml php8.5-curl php8.5-zip " +
-			"certbot python3-certbot-nginx python3-certbot-dns-cloudflare",
+			"php8.5-bcmath php8.5-intl php8.5-gd php8.5-redis php8.5-grpc " +
+			"redis-server supervisor fail2ban ufw " +
+			"certbot python3-certbot-nginx python3-certbot-dns-cloudflare " +
+			"curl wget git unzip jq openssl ca-certificates gnupg openssh-server",
+		// Enable base services.
 		"systemctl enable nginx mariadb 2>/dev/null || true",
 		"systemctl enable php8.5-fpm 2>/dev/null || true",
 		"systemctl start nginx mariadb 2>/dev/null || true",
@@ -1084,6 +1097,34 @@ func agentInstallCommand(agentBinaryURL string) string {
 		"[ -s " + shellQuote(agentDownloadPath) + " ]",
 		"test \"$(stat -c%s " + shellQuote(agentDownloadPath) + ")\" -ge " + strconv.FormatInt(minAgentBinaryBytes, 10),
 		"install -m 0755 " + shellQuote(agentDownloadPath) + " /usr/local/bin/novus-agent",
+	}, " && ")
+}
+
+func servicesSetupCommand() string {
+	return strings.Join([]string{
+		// Redis
+		"systemctl enable --now redis-server 2>/dev/null || true",
+		// Supervisor
+		"systemctl enable --now supervisor 2>/dev/null || true",
+		// Fail2Ban
+		"systemctl enable --now fail2ban 2>/dev/null || true",
+		// UFW — default deny incoming, allow essential ports
+		"ufw --force disable 2>/dev/null || true",
+		"ufw default deny incoming 2>/dev/null || true",
+		"ufw default allow outgoing 2>/dev/null || true",
+		"ufw allow 22/tcp 2>/dev/null || true",
+		"ufw allow 80/tcp 2>/dev/null || true",
+		"ufw allow 443/tcp 2>/dev/null || true",
+		"ufw allow 8080/tcp 2>/dev/null || true",
+		"ufw allow 9443/tcp 2>/dev/null || true",
+		"ufw --force enable 2>/dev/null || true",
+		// Cron jobs (from panel templates)
+		"if [ -f /var/www/novus/deploy/templates/novus-panel.cron ]; then " +
+			"sed -e 's|{{PHP_BIN}}|/usr/bin/php8.5|g' -e 's|{{PANEL_DIR}}|/var/www/novus|g' -e 's|^\\* \\* \\* \\* \\* www |* * * * * www |' " +
+			"/var/www/novus/deploy/templates/novus-panel.cron > /etc/cron.d/novus-panel 2>/dev/null; " +
+			"chmod 644 /etc/cron.d/novus-panel 2>/dev/null; " +
+			"systemctl reload cron 2>/dev/null || systemctl reload crond 2>/dev/null || true; " +
+			"fi",
 	}, " && ")
 }
 
