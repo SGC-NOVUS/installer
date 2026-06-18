@@ -833,7 +833,31 @@ func (r *Runner) buildInstallSteps(request SetupRequest, domain string, platform
 		{
 			Name: "Развертывание кода Панели",
 			Run: func(ctx context.Context, req SetupRequest, runner *Runner) error {
+				// Resolve PAT one final time from ALL sources before deploying.
+				pat := strings.TrimSpace(req.GitHubPAT)
+				if pat == "" {
+					pat = strings.TrimSpace(os.Getenv(panelGithubPATEnv))
+				}
+				if pat == "" {
+					// Try integrations as last resort.
+					for _, integration := range req.normalizedIntegrations() {
+						if integration.Key == "github_cli" && integration.Enabled {
+							pat = strings.TrimSpace(integration.Fields["github_pat"])
+							break
+						}
+					}
+				}
+				req.GitHubPAT = pat
+
 				url := runner.panelReleaseURL
+				if strings.TrimSpace(url) == "" {
+					// Build URL using the resolved PAT.
+					ref := strings.TrimSpace(os.Getenv("NOVUS_INSTALLER_PANEL_CORE_REF"))
+					if ref == "" {
+						ref = "main"
+					}
+					url = fmt.Sprintf("https://api.github.com/repos/%s/zipball/%s", panelCoreRepo, url.PathEscape(ref))
+				}
 				if strings.TrimSpace(url) == "" {
 					return fmt.Errorf("panel_release_url_missing: set NOVUS_INSTALLER_PANEL_RELEASE_URL or provide github_pat for private SGC-NOVUS/panel-core access")
 				}
