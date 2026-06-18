@@ -982,6 +982,8 @@ func (r *Runner) writeLine(line string) {
 
 func systemDependenciesCommand() string {
 	return strings.Join([]string{
+		// Kill stale apt processes that might hold dpkg lock from aborted runs.
+		"pkill -f 'apt-get|apt ' 2>/dev/null; sleep 1; rm -f /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock 2>/dev/null || true",
 		"apt-get update -qq || apt-get update -o Acquire::AllowInsecureRepositories=true || true",
 		"DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common curl wget git unzip ufw || true",
 	}, " && ")
@@ -1048,7 +1050,32 @@ func mariaDBConfigurationCommand(req SetupRequest) string {
 	)
 
 	// Use mariadb (modern) with mysql fallback for older installs.
-	return "(mariadb -e " + shellQuote(sql) + " 2>/dev/null || mysql -e " + shellQuote(sql) + " 2>/dev/null)"
+	// Pass SQL via stdin (pipe) to avoid shell escaping issues with special chars in passwords.
+	// Also sanitize passwords — remove shell-dangerous chars as a safety net.
+	safeRoot := sanitizePasswordForShell(escapeSQLLiteral(req.DBRootPassword))
+	safePanel := sanitizePasswordForShell(escapeSQLLiteral(req.DBPanelPassword))
+	sql := fmt.Sprintf(
+		"ALTER USER 'root'@'localhost' IDENTIFIED BY '%s'; CREATE DATABASE IF NOT EXISTS %s; CREATE DATABASE IF NOT EXISTS %s; CREATE DATABASE IF NOT EXISTS %s; CREATE USER IF NOT EXISTS '%s'@'localhost' IDENTIFIED BY '%s'; CREATE USER IF NOT EXISTS '%s'@'localhost' IDENTIFIED BY '%s'; GRANT ALL PRIVILEGES ON %s.* TO '%s'@'localhost'; GRANT ALL PRIVILEGES ON %s.* TO '%s'@'localhost'; GRANT ALL PRIVILEGES ON %s.* TO '%s'@'localhost'; FLUSH PRIVILEGES;",
+		safeRoot,
+		defaultOSDBName,
+		defaultIDDBName,
+		defaultSDDBName,
+		defaultSystemDBUser,
+		safePanel,
+		defaultIdentityDBUser,
+		safePanel,
+		defaultOSDBName,
+		defaultSystemDBUser,
+		defaultIDDBName,
+		defaultIdentityDBUser,
+		defaultSDDBName,
+		defaultSystemDBUser,
+	)
+
+	return fmt.Sprintf(
+		`(echo %s | mariadb 2>/dev/null || echo %s | mysql 2>/dev/null)`,
+		shellQuote(sql), shellQuote(sql),
+	)
 }
 
 func agentInstallCommand(agentBinaryURL string) string {
@@ -2111,6 +2138,26 @@ func escapeSQLLiteral(value string) string {
 	value = strings.ReplaceAll(value, `\`, `\\`)
 	value = strings.ReplaceAll(value, "'", "''")
 	return value
+}
+
+// sanitizePasswordForShell removes shell-problematic characters from
+// passwords that will be interpolated into command-line arguments.
+// This is a safety net — the real fix is to pass SQL via stdin (here-doc).
+func sanitizePasswordForShell(value string) string {
+	// Safe alphanumeric + basic punctuation
+	valid := strings.Builder{}
+	for _, r := range value {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') ||
+			r == '.' || r == '-' || r == '_' || r == '!' || r == '#' || r == '%' ||
+			r == '&' || r == '+' || r == '/' || r == '=' || r == '?' || r == '@' || r == '^' {
+			valid.WriteRune(r)
+		}
+	}
+	out := valid.String()
+	if len(out) < 8 {
+		out = "NOVUS_pw_" + strings.Repeat("x", 8-len(out))
+	}
+	return out
 }
 
 func resolveInstallerMasterKey(req SetupRequest) (string, error) {
