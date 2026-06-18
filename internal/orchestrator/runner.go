@@ -540,21 +540,11 @@ func (req SetupRequest) Validate() error {
 		}
 	}
 
-	// GitHub PAT: validate if present; warn if panel download needs it and none provided.
-	panelURL := resolvePanelReleaseURL()
+	// GitHub PAT: validate format if present; warn if missing (deferred to panel deploy step).
 	if strings.TrimSpace(req.GitHubPAT) != "" {
 		pat := strings.TrimSpace(req.GitHubPAT)
 		if !strings.HasPrefix(pat, "github_pat_") && !strings.HasPrefix(pat, "ghp_") {
 			return fmt.Errorf("setup_request_invalid:github_pat_format_invalid")
-		}
-	}
-	if strings.Contains(panelURL, "api.github.com") {
-		pat := strings.TrimSpace(req.GitHubPAT)
-		if pat == "" {
-			pat = strings.TrimSpace(os.Getenv(panelGithubPATEnv))
-		}
-		if pat == "" {
-			return fmt.Errorf("setup_request_invalid:github_pat_required_for_private_repo")
 		}
 	}
 
@@ -1022,18 +1012,18 @@ func repositoriesCommand(platform platformProfile) string {
 func stackInstallCommand() string {
 	return strings.Join([]string{
 		"apt-get update",
-		// Try external packages first; fall back to OS-native with trailing "|| true".
+		// Try PHP 8.5 packages first (from PPA). Fallback to OS-native only if 8.5 not found.
 		"DEBIAN_FRONTEND=noninteractive apt-get install -y " +
 			"nginx mariadb-server " +
-			"php-fpm php-cli php-mysql php-mbstring php-xml php-curl php-zip " +
+			"php8.5-fpm php8.5-cli php8.5-mysql php8.5-mbstring php8.5-xml php8.5-curl php8.5-zip " +
 			"certbot python3-certbot-nginx python3-certbot-dns-cloudflare " +
 			"|| DEBIAN_FRONTEND=noninteractive apt-get install -y " +
 			"nginx mariadb-server php8.5-fpm php8.5-cli php8.5-mysql php8.5-mbstring php8.5-xml php8.5-curl php8.5-zip " +
 			"certbot python3-certbot-nginx python3-certbot-dns-cloudflare",
 		"systemctl enable nginx mariadb 2>/dev/null || true",
-		"(systemctl enable php8.5-fpm 2>/dev/null || systemctl enable php-fpm 2>/dev/null || true)",
+		"systemctl enable php8.5-fpm 2>/dev/null || true",
 		"systemctl start nginx mariadb 2>/dev/null || true",
-		"(systemctl start php8.5-fpm 2>/dev/null || systemctl start php-fpm 2>/dev/null || true)",
+		"systemctl start php8.5-fpm 2>/dev/null || true",
 	}, " && ")
 }
 
