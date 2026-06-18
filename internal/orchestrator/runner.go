@@ -584,7 +584,8 @@ func (req *SetupRequest) resolveGitHubPAT() {
 		req.GitHubPAT = pat
 		return
 	}
-	for _, integration := range req.Integrations {
+	// Check integrations (normalized — handles any casing from web form).
+	for _, integration := range req.normalizedIntegrations() {
 		if integration.Key == "github_cli" && integration.Enabled {
 			if pat := strings.TrimSpace(integration.Fields["github_pat"]); pat != "" {
 				req.GitHubPAT = pat
