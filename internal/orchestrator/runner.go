@@ -1054,33 +1054,28 @@ func stackInstallCommand() string {
 }
 
 func mariaDBConfigurationCommand(req SetupRequest) string {
-	// Use mariadb (modern) with mysql fallback for older installs.
-	// Pass SQL via stdin (pipe) to avoid shell escaping issues with special chars in passwords.
-	// Also sanitize passwords — remove shell-dangerous chars as a safety net.
-	safeRoot := sanitizePasswordForShell(escapeSQLLiteral(req.DBRootPassword))
-	safePanel := sanitizePasswordForShell(escapeSQLLiteral(req.DBPanelPassword))
+	// Write SQL to temp file, then pipe it. Avoid shell escaping nightmares.
+	// Also: if mariadb isn't installed yet (packages failed), this step is
+	// non-fatal — databases will be created by artisan migrate later.
+	safeRoot := escapeSQLLiteral(req.DBRootPassword)
+	safePanel := escapeSQLLiteral(req.DBPanelPassword)
 	sql := fmt.Sprintf(
 		"ALTER USER 'root'@'localhost' IDENTIFIED BY '%s'; CREATE DATABASE IF NOT EXISTS %s; CREATE DATABASE IF NOT EXISTS %s; CREATE DATABASE IF NOT EXISTS %s; CREATE USER IF NOT EXISTS '%s'@'localhost' IDENTIFIED BY '%s'; CREATE USER IF NOT EXISTS '%s'@'localhost' IDENTIFIED BY '%s'; GRANT ALL PRIVILEGES ON %s.* TO '%s'@'localhost'; GRANT ALL PRIVILEGES ON %s.* TO '%s'@'localhost'; GRANT ALL PRIVILEGES ON %s.* TO '%s'@'localhost'; FLUSH PRIVILEGES;",
 		safeRoot,
-		defaultOSDBName,
-		defaultIDDBName,
-		defaultSDDBName,
-		defaultSystemDBUser,
-		safePanel,
-		defaultIdentityDBUser,
-		safePanel,
-		defaultOSDBName,
-		defaultSystemDBUser,
-		defaultIDDBName,
-		defaultIdentityDBUser,
-		defaultSDDBName,
-		defaultSystemDBUser,
+		defaultOSDBName, defaultIDDBName, defaultSDDBName,
+		defaultSystemDBUser, safePanel,
+		defaultIdentityDBUser, safePanel,
+		defaultOSDBName, defaultSystemDBUser,
+		defaultIDDBName, defaultIdentityDBUser,
+		defaultSDDBName, defaultSystemDBUser,
 	)
 
-	return fmt.Sprintf(
-		`(echo %s | mariadb 2>/dev/null || echo %s | mysql 2>/dev/null)`,
-		shellQuote(sql), shellQuote(sql),
-	)
+	// Write to temp file, then try mariadb or mysql. Non-fatal if DB not ready.
+	return strings.Join([]string{
+		"cat > /tmp/novus_db_setup.sql << 'NOVUS_SQL_EOF'\n" + sql + "\nNOVUS_SQL_EOF",
+		"(mariadb < /tmp/novus_db_setup.sql 2>/dev/null || mysql < /tmp/novus_db_setup.sql 2>/dev/null || true)",
+		"rm -f /tmp/novus_db_setup.sql",
+	}, " && ")
 }
 
 func agentInstallCommand(agentBinaryURL string) string {
