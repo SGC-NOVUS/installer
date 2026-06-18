@@ -988,9 +988,9 @@ func (r *Runner) writeLine(line string) {
 
 func systemDependenciesCommand() string {
 	return strings.Join([]string{
-		// Kill stale apt processes that might hold dpkg lock from aborted runs.
-		"pkill -f 'apt-get|apt ' 2>/dev/null; sleep 1; rm -f /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock 2>/dev/null || true",
-		"apt-get update -qq || apt-get update -o Acquire::AllowInsecureRepositories=true || true",
+		// Remove stale dpkg locks from aborted runs (safe fallback).
+		"rm -f /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock /var/cache/apt/archives/lock 2>/dev/null || true",
+		"apt-get update -qq 2>/dev/null || apt-get update -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true 2>/dev/null || true",
 		"DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common curl wget git unzip ufw || true",
 	}, " && ")
 }
