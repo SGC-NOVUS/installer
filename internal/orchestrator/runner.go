@@ -1252,15 +1252,19 @@ func panelDeploymentCommand(panelReleaseURL string, githubPAT string) string {
 func panelBridgeCommand() string {
 	return strings.Join([]string{
 		"cd " + shellQuote(panelInstallRoot),
-		// Install PHP dependencies — required for artisan to work.
-		// composer is typically at /usr/local/bin/composer or installed via apt.
-		"(which composer 2>/dev/null || (curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer))",
-		"composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader 2>&1 || composer install --no-dev --no-interaction 2>&1 || true",
-		"echo '=== composer done ==='",
-		"ls -la vendor/autoload.php 2>/dev/null || echo 'WARNING: vendor/autoload.php not found'",
-		"php artisan list 2>&1 | head -5 || echo 'WARNING: artisan not functional'",
-		"sudo -u www-data php artisan migrate --force 2>&1",
-		"sudo -u www-data php artisan novus:setup-foundation 2>&1",
+		// Ensure composer is available.
+		"if ! command -v composer >/dev/null 2>&1; then " +
+			"echo '[installer] Installing composer...'; " +
+			"php -r \"copy('https://getcomposer.org/installer', 'composer-setup.php');\"; " +
+			"php composer-setup.php --install-dir=/usr/local/bin --filename=composer; " +
+			"php -r \"unlink('composer-setup.php');\"; " +
+			"fi",
+		"echo '[installer] Running composer install...'",
+		"composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader",
+		"echo '[installer] Running artisan migrate...'",
+		"sudo -u www-data php artisan migrate --force",
+		"echo '[installer] Running setup-foundation...'",
+		"sudo -u www-data php artisan novus:setup-foundation",
 	}, " && ")
 }
 
