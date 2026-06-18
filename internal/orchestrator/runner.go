@@ -988,6 +988,8 @@ func (r *Runner) writeLine(line string) {
 
 func systemDependenciesCommand() string {
 	return strings.Join([]string{
+		// Fix any previously-interrupted dpkg state.
+		"dpkg --configure -a 2>/dev/null || true",
 		// Remove stale dpkg locks from aborted runs (safe fallback).
 		"rm -f /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock /var/cache/apt/archives/lock 2>/dev/null || true",
 		"apt-get update -qq 2>/dev/null || apt-get update -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true 2>/dev/null || true",
@@ -1000,7 +1002,7 @@ func repositoriesCommand(platform platformProfile) string {
 	// Each repo setup is non-fatal (|| true) so the installer never blocks.
 	addPHPRepo := "LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php 2>/dev/null || true"
 	addMariaDBRepo := "curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash 2>/dev/null || true"
-	addRedisRepo := "curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg 2>/dev/null; echo \"deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(. /etc/os-release 2>/dev/null && echo ${VERSION_CODENAME:-noble}) main\" > /etc/apt/sources.list.d/redis.list 2>/dev/null || true"
+	addRedisRepo := "rm -f /usr/share/keyrings/redis-archive-keyring.gpg 2>/dev/null; curl -fsSL https://packages.redis.io/gpg | gpg --dearmor --yes -o /usr/share/keyrings/redis-archive-keyring.gpg 2>/dev/null; echo \"deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(. /etc/os-release 2>/dev/null && echo ${VERSION_CODENAME:-noble}) main\" > /etc/apt/sources.list.d/redis.list 2>/dev/null || true"
 
 	if platform.ID == "debian" {
 		return strings.Join([]string{
