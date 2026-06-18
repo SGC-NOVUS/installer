@@ -1224,17 +1224,16 @@ func buildFinishURL(domain string, sslMode string) string {
 	}
 
 func panelDeploymentCommand(panelReleaseURL string, githubPAT string) string {
-	curlCmd := "curl -fL --retry 3 --connect-timeout 15 " + shellQuote(panelReleaseURL) + " -o " + shellQuote(panelArchivePath)
-
-	// If downloading from api.github.com (private repo), inject GitHub PAT header.
+	// If downloading from api.github.com (private repo), test PAT validity first.
 	pat := strings.TrimSpace(githubPAT)
 	if pat == "" {
-		// Fall back to env var if not provided in request body.
 		pat = strings.TrimSpace(os.Getenv(panelGithubPATEnv))
 	}
+
+	curlCmd := "curl -fL --retry 3 --connect-timeout 15 " + shellQuote(panelReleaseURL) + " -o " + shellQuote(panelArchivePath)
 	if pat != "" && strings.Contains(panelReleaseURL, "api.github.com") {
-		curlCmd = "curl -fL --retry 3 --connect-timeout 15 " +
-			"-H " + shellQuote("Authorization: token "+pat) + " " +
+		curlCmd = "curl -fL --retry 3 --connect-timeout 15 -H " +
+			shellQuote("Authorization: token "+pat) + " " +
 			shellQuote(panelReleaseURL) + " -o " + shellQuote(panelArchivePath)
 	}
 
