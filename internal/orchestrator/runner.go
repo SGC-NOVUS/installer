@@ -280,6 +280,9 @@ func (r *Runner) run(ctx context.Context, request SetupRequest) {
 		return
 	}
 
+	// Resolve GitHub PAT from all sources before passing to install steps.
+	request.resolveGitHubPAT()
+
 	finishURL := buildFinishURL(domain, request.effectiveSSLMode())
 	steps := r.buildInstallSteps(request, domain, platform)
 
@@ -441,11 +444,6 @@ func (r *Runner) removeInstallerArtifacts(paths ...string) error {
 }
 
 func (req SetupRequest) Validate() error {
-	// Merge GitHub PAT from both JSON casing variants.
-	if strings.TrimSpace(req.GitHubPAT) == "" && strings.TrimSpace(req.GitHubPATAlt) != "" {
-		req.GitHubPAT = req.GitHubPATAlt
-	}
-
 	checks := map[string]string{
 		"Domain":          req.Domain,
 		"AdminEmail":      req.AdminEmail,
@@ -584,6 +582,29 @@ func (req SetupRequest) effectiveInstallMode() string {
 	}
 
 	return "new_install"
+}
+
+// resolveGitHubPAT merges GitHub PAT from all sources: direct field, alt casing,
+// github_cli integration, and environment variable. The result is stored in req.GitHubPAT.
+func (req *SetupRequest) resolveGitHubPAT() {
+	if strings.TrimSpace(req.GitHubPAT) != "" {
+		return
+	}
+	if pat := strings.TrimSpace(req.GitHubPATAlt); pat != "" {
+		req.GitHubPAT = pat
+		return
+	}
+	for _, integration := range req.Integrations {
+		if integration.Key == "github_cli" && integration.Enabled {
+			if pat := strings.TrimSpace(integration.Fields["github_pat"]); pat != "" {
+				req.GitHubPAT = pat
+				return
+			}
+		}
+	}
+	if pat := strings.TrimSpace(os.Getenv(panelGithubPATEnv)); pat != "" {
+		req.GitHubPAT = pat
+	}
 }
 
 func (req SetupRequest) effectiveSSLMode() string {
