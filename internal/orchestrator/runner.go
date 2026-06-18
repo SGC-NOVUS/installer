@@ -996,25 +996,35 @@ func systemDependenciesCommand() string {
 }
 
 func repositoriesCommand(platform platformProfile) string {
-	mariaDBRepoSetupCmd := "curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash"
+	// Official repos for all key components — OS-version independent.
+	// Each repo setup is non-fatal (|| true) so the installer never blocks.
+	addPHPRepo := "LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php 2>/dev/null || true"
+	addMariaDBRepo := "curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash 2>/dev/null || true"
+	addRedisRepo := "curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg 2>/dev/null; echo \"deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(. /etc/os-release 2>/dev/null && echo ${VERSION_CODENAME:-noble}) main\" > /etc/apt/sources.list.d/redis.list 2>/dev/null || true"
 
-	// Build resilient repo setup: try external repos, fall back to OS-native
-	// packages when the Ubuntu release is too new for PPA/MariaDB mirrors.
-	// First, clean up any previously-failed repo files so apt-get update works.
 	if platform.ID == "debian" {
 		return strings.Join([]string{
 			"apt-get install -y ca-certificates apt-transport-https gnupg2",
+			// PHP from sury.org (Debian)
 			"(curl -fsSL https://packages.sury.org/php/apt.gpg -o /usr/share/keyrings/sury-php.gpg 2>/dev/null || true)",
 			"(. /etc/os-release 2>/dev/null; echo \"deb [signed-by=/usr/share/keyrings/sury-php.gpg] https://packages.sury.org/php/ ${VERSION_CODENAME:-bookworm} main\" > /etc/apt/sources.list.d/sury-php.list 2>/dev/null || true)",
-			"(" + mariaDBRepoSetupCmd + " 2>/dev/null || true)",
+			"(" + addMariaDBRepo + " 2>/dev/null || true)",
+			"(" + addRedisRepo + " 2>/dev/null || true)",
+			"apt-get update -qq 2>/dev/null || apt-get update -o Acquire::AllowInsecureRepositories=true || true",
 		}, " && ")
 	}
 
 	return strings.Join([]string{
-		// Remove any previously-failed PPA file that would block apt-get update.
-		"rm -f /etc/apt/sources.list.d/ondrej*.list /etc/apt/sources.list.d/ondrej*.sources 2>/dev/null",
-		"(LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php 2>/dev/null || true)",
-		"(" + mariaDBRepoSetupCmd + " 2>/dev/null || true)",
+		// Clean any previously-broken repo files.
+		"rm -f /etc/apt/sources.list.d/ondrej*.list /etc/apt/sources.list.d/ondrej*.sources /etc/apt/sources.list.d/mariadb*.list /etc/apt/sources.list.d/redis.list 2>/dev/null",
+		// PHP 8.5 (ondrej PPA — covers all Ubuntu LTS)
+		"(" + addPHPRepo + ")",
+		// MariaDB (official repo — covers all distros)
+		"(" + addMariaDBRepo + ")",
+		// Redis (official repo — covers all distros)
+		"(" + addRedisRepo + ")",
+		// Refresh package lists
+		"apt-get update -qq 2>/dev/null || apt-get update -o Acquire::AllowInsecureRepositories=true || true",
 	}, " && ")
 }
 
