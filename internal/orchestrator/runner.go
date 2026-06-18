@@ -1252,6 +1252,8 @@ func panelDeploymentCommand(panelReleaseURL string, githubPAT string) string {
 func panelBridgeCommand() string {
 	return strings.Join([]string{
 		"cd " + shellQuote(panelInstallRoot),
+		// Install PHP dependencies first — required for artisan to work.
+		"composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader 2>/dev/null || composer install --no-dev --no-interaction 2>/dev/null || true",
 		"sudo -u www-data php artisan migrate --force",
 		"sudo -u www-data php artisan novus:setup-foundation",
 	}, " && ")
