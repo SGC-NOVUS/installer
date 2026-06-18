@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="h-full bg-slate-50">
+<html lang="en" class="h-full dark">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,7 +11,7 @@
     <link rel="icon" type="image/svg+xml" href="/logo.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
     <link rel="stylesheet" href="/installer.css">
     <script type="importmap">
@@ -41,53 +41,57 @@
         --page-sidebar: #f1f5f9;
         --page-content: #ffffff;
         --border-color: #e2e8f0;
-        --surface-bg: #ffffff;
-        --surface-muted: #f8fafc;
-        --surface-elevated: rgba(255, 255, 255, 0.86);
+        --surface-bg: rgba(255, 255, 255, 0.7);
+        --surface-muted: rgba(248, 250, 252, 0.8);
+        --surface-elevated: rgba(255, 255, 255, 0.9);
         --text-primary: #0f172a;
         --text-secondary: #475569;
         --text-muted: #64748b;
         --text-soft: #94a3b8;
-        --accent: #10b981;
-        --accent-strong: #059669;
-        --accent-soft: rgba(16, 185, 129, 0.12);
-        --accent-border: rgba(16, 185, 129, 0.24);
-        --input-bg: #ffffff;
+        --accent: #00F2FE;
+        --accent-strong: #0066FF;
+        --accent-soft: rgba(0, 242, 254, 0.12);
+        --accent-border: rgba(0, 242, 254, 0.3);
+        --input-bg: rgba(255, 255, 255, 0.8);
         --input-border: #cbd5e1;
         --theme-toggle-bg: rgba(255, 255, 255, 0.92);
         --theme-toggle-shadow: 0 12px 32px rgba(15, 23, 42, 0.10);
-        --bg-orb-left: rgba(14, 165, 233, 0.12);
-        --bg-orb-right: rgba(16, 185, 129, 0.10);
-        --bg-grid: rgba(148, 163, 184, 0.06);
-        --shell-shadow: 0 28px 80px rgba(15, 23, 42, 0.10);
+        --bg-orb-left: rgba(0, 242, 254, 0.25);
+        --bg-orb-right: rgba(139, 92, 246, 0.2);
+        --bg-grid: rgba(148, 163, 184, 0.1);
+        --shell-shadow: 0 28px 80px rgba(15, 23, 42, 0.15);
+        --glass-blur: blur(24px);
+        --glass-border: rgba(255, 255, 255, 0.4);
       }
 
       html.dark {
         color-scheme: dark;
-        --page-bg: #020617;
-        --page-surface: #020617;
-        --page-sidebar: #0f172a;
-        --page-content: #020617;
-        --border-color: #1e293b;
-        --surface-bg: rgba(15, 23, 42, 0.74);
-        --surface-muted: rgba(15, 23, 42, 0.60);
-        --surface-elevated: rgba(15, 23, 42, 0.86);
-        --text-primary: #f8fafc;
+        --page-bg: #060608;
+        --page-surface: #0a0a0c;
+        --page-sidebar: rgba(10, 10, 12, 0.55);
+        --page-content: rgba(10, 10, 12, 0.65);
+        --border-color: rgba(255, 255, 255, 0.08);
+        --surface-bg: rgba(20, 20, 24, 0.45);
+        --surface-muted: rgba(20, 20, 24, 0.3);
+        --surface-elevated: rgba(30, 30, 35, 0.6);
+        --text-primary: #ffffff;
         --text-secondary: #cbd5e1;
         --text-muted: #94a3b8;
         --text-soft: #64748b;
-        --accent: #10b981;
-        --accent-strong: #34d399;
-        --accent-soft: rgba(16, 185, 129, 0.14);
-        --accent-border: rgba(16, 185, 129, 0.30);
-        --input-bg: #0f172a;
-        --input-border: #334155;
-        --theme-toggle-bg: rgba(15, 23, 42, 0.88);
-        --theme-toggle-shadow: 0 16px 36px rgba(0, 0, 0, 0.32);
-        --bg-orb-left: rgba(14, 165, 233, 0.18);
-        --bg-orb-right: rgba(16, 185, 129, 0.14);
-        --bg-grid: rgba(148, 163, 184, 0.035);
-        --shell-shadow: 0 30px 90px rgba(0, 0, 0, 0.28);
+        --accent: #00F2FE;
+        --accent-strong: #0066FF;
+        --accent-soft: rgba(0, 242, 254, 0.15);
+        --accent-border: rgba(0, 242, 254, 0.35);
+        --input-bg: rgba(20, 20, 24, 0.5);
+        --input-border: rgba(255, 255, 255, 0.1);
+        --theme-toggle-bg: rgba(20, 20, 24, 0.7);
+        --theme-toggle-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
+        --bg-orb-left: rgba(0, 242, 254, 0.22);
+        --bg-orb-right: rgba(139, 92, 246, 0.22);
+        --bg-grid: rgba(255, 255, 255, 0.04);
+        --shell-shadow: 0 40px 120px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+        --glass-blur: blur(32px);
+        --glass-border: rgba(255, 255, 255, 0.08);
       }
 
         [v-cloak] {
@@ -205,6 +209,8 @@
           gap: 2.25rem;
           border-right: 1px solid var(--border-color);
           background: var(--page-sidebar);
+          backdrop-filter: var(--glass-blur);
+          -webkit-backdrop-filter: var(--glass-blur);
           padding: 2rem;
           box-sizing: border-box;
         }
@@ -217,6 +223,8 @@
           min-width: 0;
           flex-direction: column;
           background: var(--page-content);
+          backdrop-filter: var(--glass-blur);
+          -webkit-backdrop-filter: var(--glass-blur);
           overflow: hidden;
         }
 
@@ -395,13 +403,15 @@
           background: var(--surface-bg);
           color: var(--text-secondary);
           padding: 1rem 1.125rem;
-          transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+          transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1), background-color 300ms ease, border-color 300ms ease, color 300ms ease, box-shadow 300ms ease;
         }
 
         .stepper-item.is-active {
           border-color: var(--accent-border);
           background: var(--accent-soft);
           color: var(--text-primary);
+          box-shadow: 0 0 20px rgba(0, 242, 254, 0.15), inset 0 1px 1px var(--glass-border);
+          transform: scale(1.02);
         }
 
         .stepper-item.is-complete {
@@ -641,13 +651,21 @@
           border-radius: 1rem;
           background: var(--surface-bg);
           box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+          backdrop-filter: var(--glass-blur);
+          -webkit-backdrop-filter: var(--glass-blur);
+          transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1), border-color 300ms ease;
         }
 
         html.dark .hero-card,
         html.dark .choice-card,
         html.dark .surface-card,
         html.dark .summary-card {
-          box-shadow: none;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 1px var(--glass-border);
+        }
+
+        html.dark .hero-card:hover,
+        html.dark .choice-card:hover {
+          box-shadow: 0 12px 40px rgba(0, 242, 254, 0.12), inset 0 1px 1px var(--glass-border);
         }
 
         .hero-card,
@@ -2689,6 +2707,200 @@
           grid-template-columns: minmax(0, 1fr);
         }
       }
+        .nav-button {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.6rem;
+          border-radius: 999px;
+          font-weight: 700;
+          font-size: 0.95rem;
+          letter-spacing: 0.05em;
+          padding: 0.8rem 1.6rem;
+          transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 300ms ease, background-color 300ms ease;
+          border: 1px solid transparent;
+          cursor: pointer;
+        }
+
+        .nav-button--primary {
+          background: linear-gradient(135deg, var(--accent-strong), var(--accent));
+          color: #ffffff;
+          border: 0 !important;
+          box-shadow: 0 8px 24px rgba(0, 102, 255, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+        }
+
+        .nav-button--primary:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 32px rgba(0, 242, 254, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+        }
+
+        .nav-button--secondary {
+          background: var(--surface-bg);
+          border: 1px solid var(--border-color);
+          color: var(--text-primary);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+          backdrop-filter: var(--glass-blur);
+          -webkit-backdrop-filter: var(--glass-blur);
+        }
+
+        .nav-button--secondary:hover:not(:disabled) {
+          border-color: var(--accent-border);
+          background: var(--surface-elevated);
+          transform: translateY(-2px);
+        }
+
+        .nav-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        ::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 99px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.2);
+        }
+        /* AAA Typography Update */
+        body {
+          font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+        }
+        h1, h2, h3, .step-title, .surface-title, .matrix-chip-title, .choice-card-title, .summary-label {
+          font-family: 'Space Grotesk', sans-serif !important;
+          letter-spacing: -0.02em;
+        }
+
+        /* Ambient Background Animations */
+        @keyframes orbFloatLeft {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(4vw, -6vh) scale(1.1); }
+          66% { transform: translate(-3vw, 4vh) scale(0.9); }
+        }
+        @keyframes orbFloatRight {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(-4vw, 5vh) scale(1.15); }
+          66% { transform: translate(3vw, -4vh) scale(0.85); }
+        }
+        .bg-orb-left {
+          animation: orbFloatLeft 20s ease-in-out infinite;
+        }
+        .bg-orb-right {
+          animation: orbFloatRight 24s ease-in-out infinite reverse;
+        }
+
+        /* Premium Form Inputs */
+        .field-control {
+          font-family: 'Inter', sans-serif !important;
+          border-radius: 12px !important;
+          background: var(--input-bg) !important;
+          border: 1px solid var(--input-border) !important;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .dark .field-control {
+          box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .field-control:focus {
+          border-color: var(--accent) !important;
+          box-shadow: 0 0 0 4px var(--accent-soft), inset 0 2px 4px rgba(0,0,0,0.1) !important;
+          outline: none;
+        }
+
+        /* Vue Step Transitions */
+        .fade-slide-enter-active,
+        .fade-slide-leave-active {
+          transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .fade-slide-enter-from {
+          opacity: 0;
+          transform: translateX(20px);
+        }
+        .fade-slide-leave-to {
+          opacity: 0;
+          transform: translateX(-20px);
+        }
+
+        /* Glass Terminal Upgrade */
+        .terminal-panel {
+          border-radius: 16px !important;
+          border: 1px solid rgba(255, 255, 255, 0.08) !important;
+          box-shadow: 0 24px 60px rgba(0, 242, 254, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.05) !important;
+          background: rgba(4, 8, 20, 0.85) !important;
+          backdrop-filter: blur(24px) !important;
+          -webkit-backdrop-filter: blur(24px) !important;
+        }
+        .terminal-bar {
+          background: rgba(255, 255, 255, 0.03) !important;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+          backdrop-filter: blur(12px) !important;
+          -webkit-backdrop-filter: blur(12px) !important;
+        }
+        .terminal-panel .xterm-rows {
+          text-shadow: 0 0 8px rgba(0, 242, 254, 0.3) !important;
+        }
+
+        /* Fix Vue Transition Layout */
+        .step-wrapper {
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+          min-height: 0;
+          width: 100%;
+        }
+
+        /* Premium File Input Styling */
+        input[type="file"] {
+          color: var(--text-secondary);
+          font-family: 'Inter', sans-serif;
+        }
+        input[type="file"]::file-selector-button {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid var(--accent-border);
+          color: var(--text-primary);
+          padding: 0.55rem 1.2rem;
+          border-radius: 8px;
+          cursor: pointer;
+          margin-right: 1rem;
+          font-family: 'Inter', sans-serif;
+          font-weight: 600;
+          transition: all 0.2s ease;
+        }
+        .dark input[type="file"]::file-selector-button {
+          background: rgba(255, 255, 255, 0.1);
+        }
+        input[type="file"]::file-selector-button:hover {
+          background: var(--accent-soft);
+          border-color: var(--accent);
+          transform: translateY(-1px);
+        }
+
+        /* Layout scroll containment fix */
+        .content-panel {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          min-height: 0;
+        }
+        .content-inner {
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+          height: 100% !important;
+          max-height: 100% !important;
+          min-height: 0;
+          overflow: hidden;
+        }
     </style>
   </head>
   <body>
@@ -2803,7 +3015,8 @@
             </div>
 
             <div class="content-inner">
-              <template v-if="wizardStep === 0">
+              <transition name="fade-slide" mode="out-in">
+              <div v-if="wizardStep === 0" key="step-0" class="step-wrapper">
                 <div class="step-header">
                   <p class="step-kicker">{{ t('app.eyebrow') }}</p>
                   <h2 class="step-title">{{ t('wizard.welcome.title') }}</h2>
@@ -2879,9 +3092,9 @@
                     </div>
                   </div>
                 </div>
-              </template>
+              </div>
 
-              <template v-else>
+              <div v-else :key="'step-' + wizardStep" class="step-wrapper">
                 <div class="step-header">
                   <p class="step-kicker">{{ currentWizardOrdinal }}/{{ totalWizardSteps }}</p>
                   <h2 class="step-title">{{ t('wizard.steps.' + activeStepKey) }}</h2>
@@ -2949,16 +3162,22 @@
                       </div>
 
                       <div class="surface-card">
-                        <p class="surface-title">{{ t('wizard.restore.keyTitle') }}</p>
-                        <p class="surface-copy">{{ t('wizard.restore.keyBody') }}</p>
+                        <div class="inline-label-row">
+                          <div>
+                            <p class="surface-title">{{ t('wizard.restore.keyTitle') }}</p>
+                            <p class="surface-copy">{{ t('wizard.restore.keyBody') }}</p>
+                          </div>
+                          <div class="restore-tabs">
+                            <button type="button" :class="['restore-tab', { 'is-active': restoreKeyMode === 'manual' }]" @click="setRestoreKeyMode('manual')">{{ t('wizard.restore.keyMaterial') }}</button>
+                            <button type="button" :class="['restore-tab', { 'is-active': restoreKeyMode === 'upload' }]" @click="setRestoreKeyMode('upload')">{{ t('wizard.restore.keyFile') }}</button>
+                          </div>
+                        </div>
 
-                        <div class="field-group">
-                          <label for="restore-key" class="field-label">{{ t('wizard.restore.keyMaterial') }}</label>
+                        <div v-if="restoreKeyMode === 'manual'" class="field-group">
                           <textarea id="restore-key" v-model.trim="form.restore.keyMaterial" rows="4" class="field-control" :placeholder="t('wizard.restore.keyMaterialPlaceholder')"></textarea>
                         </div>
 
-                        <div class="field-group">
-                          <label for="restore-key-file" class="field-label">{{ t('wizard.restore.keyFile') }}</label>
+                        <div v-else-if="restoreKeyMode === 'upload'" class="field-group">
                           <input id="restore-key-file" type="file" accept=".key,.txt,.json,application/json,text/plain" class="field-control" style="height:auto; padding:0.8rem 1rem;" @change="handleRestoreKeyFileSelection">
                           <div class="surface-meta">{{ form.restore.keyFileName || t('wizard.restore.keyFileHint') }}</div>
                         </div>
@@ -3551,8 +3770,8 @@
                     </button>
                   </div>
                 </div>
-              </template>
-            </div>
+              </div>
+              </transition>
           </div>
 
           <div v-if="integrationLibraryOpen" class="provider-drawer-backdrop" @click.self="closeIntegrationLibrary">

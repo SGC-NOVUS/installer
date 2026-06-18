@@ -391,7 +391,9 @@ const inlineFallbackMessages = {
       summary: {
         mode: 'Mode',
         target: 'Target',
+        targetPending: 'TBD by domain input',
         admin: 'Admin',
+        adminPending: 'TBD by email input',
         ssl: 'SSL',
         security: 'Security'
       }
@@ -1089,6 +1091,7 @@ async function bootstrap() {
       const terminalEl = ref(null);
       const themeModeResolved = ref('light');
       const restoreInputMode = ref('url');
+      const restoreKeyMode = ref('manual');
       const adminLoginTouched = ref(false);
       const toast = reactive({
         message: '',
@@ -1821,6 +1824,16 @@ async function bootstrap() {
         }
       };
 
+      const setRestoreKeyMode = (nextMode) => {
+        restoreKeyMode.value = nextMode;
+        if (nextMode === 'manual') {
+          form.restore.keyFileName = '';
+          form.restore.keyFilePayload = '';
+        } else {
+          form.restore.keyMaterial = '';
+        }
+      };
+
       const handleRestoreFileSelection = async (event) => {
         const target = event.target;
         const file = target && target.files && target.files[0] ? target.files[0] : null;
@@ -1847,6 +1860,7 @@ async function bootstrap() {
         try {
           form.restore.keyFilePayload = await fileToText(file);
           form.restore.keyFileName = file.name;
+          restoreKeyMode.value = 'upload';
           showToast(file.name, 'ok');
         } catch (_) {
           showToast(t('errors.restoreFileRead'), 'error');
@@ -2117,6 +2131,7 @@ async function bootstrap() {
         Object.assign(form, createDefaultForm());
         adminLoginTouched.value = false;
         restoreInputMode.value = 'url';
+        restoreKeyMode.value = 'manual';
         closeIntegrationModal();
         Object.keys(visibleSecrets).forEach((key) => {
           delete visibleSecrets[key];
@@ -2208,6 +2223,7 @@ async function bootstrap() {
         primaryActionLabel,
         restartInstaller,
         restoreInputMode,
+        restoreKeyMode,
         restoreSummaryLabel,
         saveIntegrationModal,
         securityEntranceCookiePath,
@@ -2220,6 +2236,7 @@ async function bootstrap() {
         selectSSLMode,
         setStepDetailMode,
         setRestoreInputMode,
+        setRestoreKeyMode,
         showToast,
         sslSummaryLabel,
         startRestoreWizard,

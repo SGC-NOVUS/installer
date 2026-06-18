@@ -1,0 +1,444 @@
+{
+  "app": {
+    "eyebrow": "NOVUS-OS Установщик"
+  },
+  "common": {
+    "back": "Назад",
+    "continue": "Далее",
+    "start": "Установить",
+    "restart": "Начать заново",
+    "basic": "Базово",
+    "advanced": "Расширенно",
+    "comingSoon": "Скоро",
+    "recommended": "Рекомендуется",
+    "enabled": "Включено",
+    "disabled": "Отключено",
+    "generate": "Сгенерировать",
+    "preview": "Предпросмотр",
+    "optional": "Опционально",
+    "close": "Закрыть",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "disable": "Отключить",
+    "toggleTheme": "Переключить тему",
+    "themeLight": "Переключить на светлую тему",
+    "themeDark": "Переключить на тёмную тему",
+    "themeModeLight": "Светлая",
+    "themeModeDark": "Тёмная"
+  },
+  "wizard": {
+    "title": "Установка NOVUS-OS",
+    "description": "Заполните параметры и запустите установку NOVUS-OS в несколько шагов.",
+    "helpAria": "Показать подсказку",
+    "steps": {
+      "welcome": "Приветствие",
+      "mode": "Режим",
+      "domain": "Домен и SSL",
+      "admin": "Профиль администратора",
+      "database": "База данных",
+      "security": "Контур безопасности",
+      "integrations": "Интеграции"
+    },
+    "viewModeTitle": "Режим формы",
+    "viewModeBody": "В базовом режиме показываются только обязательные поля.",
+    "welcome": {
+      "title": "Добро пожаловать в установщик NOVUS-OS",
+      "body": "Мы поможем пройти установку по шагам: выберите режим, задайте доступ к панели и проверьте параметры безопасности.",
+      "defaults": "Сеанс",
+      "heroTitle": "Установка готова к запуску",
+      "heroBody": "Все параметры можно изменить в процессе. Нажмите кнопку ниже, чтобы выбрать: новая установка или восстановление из резервной копии.",
+      "cta": "Начать установку",
+      "restoreCta": "Перейти к восстановлению",
+      "footer": ""
+    },
+    "mode": {
+      "title": "Выберите режим установки",
+      "body": "Определите, будет ли это новая установка или восстановление из резервной копии.",
+      "footer": "",
+      "freshTitle": "Новая установка",
+      "freshBody": "Подготовьте новую установку панели, баз данных, агента и веб-стека.",
+      "restoreTitle": "Восстановление",
+      "restoreBody": "Восстановите конфигурацию панели из ранее экспортированного пакета.",
+      "restoreHint": "Параметры восстановления будут применены во время установки."
+    },
+    "restore": {
+      "liveBadge": "Активно",
+      "sourceTitle": "Источник восстановления",
+      "sourceBody": "Укажите, откуда загрузить резервную копию панели: по ссылке или из файла.",
+      "sourceUrl": "URL",
+      "sourceUpload": "Файл",
+      "sourcePaste": "Вставить",
+      "bundleUrl": "URL резервной копии",
+      "bundleUrlPlaceholder": "https://backup.example.com/novus-export.sgcenc.json",
+      "bundleUpload": "Файл резервной копии",
+      "bundleUploadHint": "Выберите файл резервной копии панели.",
+      "bundlePayload": "Inline payload резервной копии",
+      "bundlePayloadPlaceholder": "Вставьте сюда полный зашифрованный NOVUS export envelope.",
+      "importModeTitle": "Сценарий восстановления",
+      "importModeBody": "После проверки ключа выберите, как применить данные резервной копии.",
+      "importOverwrite": "Полное восстановление",
+      "importSkip": "Восстановление с корректировками",
+      "importReportOnly": "Только отчет (без изменений)",
+      "keyTitle": "Расшифровка и разблокировка",
+      "keyBody": "Загрузите файл ключа и укажите пароль к нему. Если ключ не зашифрован, можно использовать ручной ввод или recovery phrase.",
+      "keyMaterial": "Ручной ввод ключа (опционально)",
+      "keyMaterialPlaceholder": "Вставьте ключ вручную, если не используете файл ключа.",
+      "keyFile": "Файл криптографического ключа",
+      "keyFileHint": "Загрузите файл ключа восстановления панели.",
+      "keyPassword": "Пароль от файла ключа",
+      "keyPasswordPlaceholder": "Введите пароль для чтения ключа",
+      "recoveryPhrase": "Recovery phrase",
+      "recoveryPhrasePlaceholder": "Вставьте операторскую recovery phrase, использованную при экспорте.",
+      "summarySource": "Выбранный источник",
+      "summaryMode": "Режим импорта",
+      "summaryKey": "Состояние ключа",
+      "keyReady": "Ключ готов к проверке",
+      "keyNeeded": "Требуется ключ или пароль",
+      "footer": ""
+    },
+    "domain": {
+      "title": "Домен и сертификат",
+      "body": "Укажите домен или IP для доступа к панели и выберите тип сертификата.",
+      "footer": "",
+      "field": "URL панели или домен",
+      "placeholder": "project.com или panel.your-domain.com",
+      "domainHelp": "Укажите домен, который хотите использовать, например: project.com. Можно указать поддомен: panel.ваш-домен. Если домена нет, допускается IP-адрес сервера.",
+      "domainTip": "Пример: project.com, panel.project.com или 203.0.113.10",
+      "ipDetectedTitle": "Обнаружен IP-адрес",
+      "ipDetectedBody": "При работе по IP рекомендуется включить Защитный вход, чтобы ограничить доступ к панели через секретный путь.",
+      "ipDetectedNote": "Позже параметры можно изменить в настройках панели, добавить домен и выпустить сертификат.",
+      "enableSecurityEntrance": "Включить Защитный вход",
+      "sslTitle": "Стратегия SSL-сертификата",
+      "cloudflareToken": "Cloudflare API Token",
+      "cloudflarePlaceholder": "Вставьте ваш Cloudflare API Token",
+      "customCertificate": "Тело сертификата",
+      "customCertificatePlaceholder": "-----BEGIN CERTIFICATE-----",
+      "customPrivateKey": "Приватный ключ",
+      "customPrivateKeyPlaceholder": "-----BEGIN PRIVATE KEY-----",
+      "securityEntrance": {
+        "title": "Защитный вход (Security Entrance)",
+        "body": "Скрывает вход в панель за секретным путем и отдельным портом, добавляет защиту от перебора.",
+        "path": "Секретный путь",
+        "pathPlaceholder": "gate-control",
+        "pathHelp": "Это секретная часть URL входа. Пример: /gate-control. Без этого пути открыть панель не получится.",
+        "port": "Внешний порт входа",
+        "portPlaceholder": "Оставьте пустым, чтобы использовать стандартный порт",
+        "portHelp": "Отдельный порт для входа в панель. Можно оставить пустым и использовать стандартный порт.",
+        "window": "Окно rate-limit (сек)",
+        "windowHelp": "Период времени, за который считаются попытки входа.",
+        "attempts": "Максимум попыток входа",
+        "attemptsHelp": "Сколько попыток входа допускается в одном окне до блокировки.",
+        "block": "Время блокировки (сек)",
+        "blockHelp": "На сколько секунд блокируется доступ после превышения лимита попыток.",
+        "entryPath": "Внешний путь",
+        "cookiePath": "Путь cookie",
+        "disabledState": "Отключено"
+      },
+      "sslOptions": {
+        "letsencrypt": {
+          "title": "Let's Encrypt (Автоматически)",
+          "body": "Выпустить и подключить сертификат автоматически во время установки."
+        },
+        "cloudflare": {
+          "title": "Cloudflare SSL",
+          "body": "Использовать DNS-подтверждение через Cloudflare API token."
+        },
+        "custom": {
+          "title": "Собственный сертификат",
+          "body": "Передайте свой сертификат и приватный ключ для немедленного использования."
+        }
+      }
+    },
+    "admin": {
+      "title": "Профиль администратора",
+      "body": "Создайте первую учётную запись администратора. Логин заполняется из email автоматически, но его можно изменить вручную.",
+      "footer": "",
+      "email": "Email администратора",
+      "emailPlaceholder": "name{'@'}your-domain.com",
+      "login": "Логин администратора",
+      "loginPlaceholder": "admin",
+      "loginHint": "По умолчанию логин берётся из email до символа {'@'}, но можно указать свой.",
+      "password": "Пароль администратора",
+      "passwordPlaceholder": "Надёжный пароль",
+      "confirmPassword": "Подтвердите пароль",
+      "confirmPasswordPlaceholder": "Повторите пароль администратора",
+      "generateAndCopy": "Сгенерировать и скопировать",
+      "readinessTitle": "Проверка готовности",
+      "readinessBody": "Проверьте набор данных, который будет использован для первого привилегированного входа и bootstrap панели.",
+      "confirmationStatus": "Подтверждение",
+      "passwordsMatch": "Пароли совпадают",
+      "passwordsMismatch": "Пароли пока не совпадают",
+      "passwordCopied": "Пароль администратора сгенерирован и скопирован в буфер обмена.",
+      "strength": {
+        "length": "12+ символов",
+        "upper": "A-Z",
+        "lower": "a-z",
+        "digit": "0-9",
+        "special": "Спецсимвол"
+      }
+    },
+    "database": {
+      "title": "Параметры базы данных",
+      "body": "Задайте пароли MariaDB для системного администратора и панели перед запуском миграций.",
+      "footer": "Установщик подготавливает отдельные базы данных NOVUS OS, identity и service desk.",
+      "rootPassword": "Пароль администратора MariaDB",
+      "panelPassword": "Пароль базы данных панели",
+      "rootPlaceholder": "Пароль администратора MariaDB",
+      "panelPlaceholder": "Пароль базы данных панели",
+      "generateAndCopy": "Сгенерировать и скопировать",
+      "passwordCopied": "Пароль базы данных сгенерирован и скопирован в буфер обмена.",
+      "startInstall": "Начать установку",
+      "summaryTitle": "Базы данных",
+      "summaryBody": "Эти базы создаются во время установки.",
+      "osDatabase": "OS база",
+      "identityDatabase": "Identity база",
+      "serviceDeskDatabase": "Service Desk база"
+    },
+    "security": {
+      "title": "Ключи и KMS",
+      "body": "Выберите способ подготовки master key и, при необходимости, внешний KMS.",
+      "footer": "Параметры ключей и KMS будут применены установщиком во время развёртывания.",
+      "hybridTitle": "Автоматическое управление ключом",
+      "hybridBody": "Установщик сгенерирует master key и настроит стандартный backend автоматически.",
+      "manualTitle": "Ручной ключ",
+      "manualBody": "Передайте master key вручную в формате hex или base64.",
+      "cloudflareTitle": "Cloudflare KMS",
+      "cloudflareBody": "Использовать Cloudflare Worker для операций с master key.",
+      "tpm2Title": "TPM2",
+      "tpm2Body": "Использовать TPM2, если сервер поддерживает аппаратное хранение ключа.",
+      "manualMaterialTitle": "Ручной master key",
+      "manualMaterialBody": "Сгенерируйте ключ или вставьте существующее значение.",
+      "manualGenerate": "Сгенерировать материал",
+      "manualFormat": "Формат ручного ключа",
+      "manualHex": "Hex",
+      "manualBase64": "Base64",
+      "keyLabel": "Master Key",
+      "keyPlaceholder": "Вставьте master-key material",
+      "cloudflareConfigTitle": "Настройки Cloudflare KMS",
+      "cloudflareConfigBody": "Укажите данные доступа и адрес worker для Cloudflare KMS.",
+      "cloudflareToken": "Cloudflare API Token",
+      "cloudflareTokenPlaceholder": "Оставьте пустым, чтобы переиспользовать SSL token, если это возможно",
+      "cloudflareReuseSsl": "Если поле пустое, будет использован Cloudflare token из SSL, если он уже задан.",
+      "cloudflareAccountId": "Cloudflare account ID",
+      "cloudflareAccountPlaceholder": "Идентификатор Cloudflare account",
+      "cloudflareWorkerUrl": "Worker URL",
+      "cloudflareWorkerPlaceholder": "https://novus-kms.example.workers.dev",
+      "cloudflareAdvancedTitle": "Дополнительные параметры worker",
+      "cloudflareAdvancedBody": "Укажите script, namespace и route только если это требуется.",
+      "cloudflareScriptName": "Имя worker script",
+      "cloudflareNamespaceTitle": "Название KV namespace",
+      "cloudflareZoneId": "Zone ID",
+      "cloudflareZonePlaceholder": "Необязательный идентификатор зоны",
+      "cloudflareRoutePattern": "Route pattern",
+      "cloudflareRoutePlaceholder": "Необязательный шаблон маршрута, например kms.example.com/*",
+      "summaryTitle": "Сводка конфигурации ключей",
+      "summaryBackend": "Backend",
+      "summaryMode": "Режим",
+      "summaryAutomatic": "Автоматическая генерация ключа",
+      "hint": "Установщик сохранит параметры окружения, master key и дополнительные секреты в совместимом формате."
+    },
+    "integrations": {
+      "title": "Интеграции",
+      "body": "При необходимости сохраните внешние провайдеры до первого запуска панели.",
+      "footer": "В installer payload попадают только включённые провайдеры с заполненными обязательными полями.",
+      "catalogTitle": "Провайдеры",
+      "catalogBody": "Откройте боковое меню провайдеров, выберите интеграцию и настройте её в модалке.",
+      "selectLabel": "Выберите интеграцию",
+      "addSelected": "Добавить или настроить интеграцию",
+      "openProviderMenu": "Добавить провайдера",
+      "providerLibraryTitle": "Доступные провайдеры",
+      "providerLibraryBody": "Выберите провайдера в этом боковом меню. Окно настроек откроется поверх списка.",
+      "availableCount": "Доступные провайдеры",
+      "sidebarTitle": "Подключённые интеграции",
+      "sidebarEmpty": "Интеграции пока не добавлены.",
+      "quickStatusReady": "Готово",
+      "quickStatusIncomplete": "Нужно заполнить",
+      "startInstall": "Начать установку",
+      "configured": "Настроено",
+      "notConfigured": "Не настроено",
+      "configuredCount": "Настроенные провайдеры",
+      "fieldSet": "полей",
+      "configure": "Настроить",
+      "add": "Добавить",
+      "modalEyebrow": "Настройки провайдера",
+      "enableTitle": "Включить провайдера",
+      "enableBody": "В setup request сериализуются только включённые провайдеры.",
+      "categories": {
+        "operations": "Операции",
+        "identity": "Идентификация",
+        "network": "Сеть",
+        "automation": "Автоматизация",
+        "ai": "AI",
+        "agents": "Агенты",
+        "edge": "Edge",
+        "commerce": "Commerce",
+        "delivery": "Доставка"
+      },
+      "invalidProvider": "Заполните все обязательные поля, прежде чем включать этого провайдера.",
+      "providers": {
+        "telegram": {
+          "title": "Telegram Global Bot",
+          "description": "Основной глобальный Telegram-бот для уведомлений установщика и алертов панели.",
+          "fields": {
+            "clientId": "Telegram Client ID",
+            "clientIdPlaceholder": "Telegram OAuth client ID",
+            "token": "Токен бота",
+            "tokenPlaceholder": "Токен Telegram-бота",
+            "adminId": "ID чата администратора",
+            "adminIdPlaceholder": "ID чата администратора Telegram",
+            "oauthToken": "OAuth2 токен Telegram",
+            "oauthTokenPlaceholder": "OAuth2 токен Telegram"
+          }
+        },
+        "discordNotifications": {
+          "title": "Discord Global Bot",
+          "description": "Основной глобальный Discord-бот для уведомлений и операционных сообщений.",
+          "fields": {
+            "token": "Токен бота",
+            "tokenPlaceholder": "Токен Discord-бота",
+            "adminId": "ID администратора",
+            "adminIdPlaceholder": "ID администратора Discord",
+            "oauthToken": "OAuth2 токен Discord",
+            "oauthTokenPlaceholder": "OAuth2 токен Discord"
+          }
+        },
+        "google": {
+          "title": "Google OAuth",
+          "description": "Заранее настройте Google как identity provider для входа операторов.",
+          "fields": {
+            "clientId": "Client ID",
+            "clientIdPlaceholder": "Google OAuth client ID",
+            "clientSecret": "Client Secret",
+            "clientSecretPlaceholder": "Google OAuth client secret"
+          }
+        },
+        "github": {
+          "title": "GitHub OAuth",
+          "description": "Подготовьте GitHub sign-in для команд, уже завязанных на GitHub org identity.",
+          "fields": {
+            "clientId": "Client ID",
+            "clientIdPlaceholder": "GitHub OAuth client ID",
+            "clientSecret": "Client Secret",
+            "clientSecretPlaceholder": "GitHub OAuth client secret"
+          }
+        },
+        "githubCli": {
+          "title": "GitHub CLI Token",
+          "description": "Сохраните GitHub Personal Access Token для GitOps, автоматизации и CLI-задач.",
+          "fields": {
+            "pat": "Personal access token",
+            "patPlaceholder": "ghp_xxxxxxxxxxxxxxxxxxxx"
+          }
+        },
+        "gemini": {
+          "title": "Gemini AI",
+          "description": "Настройте API-ключ Google Gemini для AI-интеграций панели.",
+          "fields": {
+            "apiKey": "Gemini API key",
+            "apiKeyPlaceholder": "AIza..."
+          }
+        },
+        "discord": {
+          "title": "Discord OAuth",
+          "description": "Включите Discord как identity provider отдельно от notification transport.",
+          "fields": {
+            "clientId": "Client ID",
+            "clientIdPlaceholder": "Discord OAuth client ID",
+            "clientSecret": "Client Secret",
+            "clientSecretPlaceholder": "Discord OAuth client secret"
+          }
+        },
+        "cloudflare": {
+          "title": "Cloudflare Provider",
+          "description": "Сохраните Cloudflare API credentials для DNS, edge и worker-driven platform services.",
+          "fields": {
+            "apiToken": "API token",
+            "apiTokenPlaceholder": "Cloudflare API token",
+            "accountId": "Account ID",
+            "accountIdPlaceholder": "Cloudflare account ID"
+          }
+        },
+        "steam": {
+          "title": "Steam",
+          "description": "Сохраните Steam Web API credentials для будущих catalog или identity workflows.",
+          "fields": {
+            "apiKey": "Steam Web API key",
+            "apiKeyPlaceholder": "Steam Web API key"
+          }
+        },
+        "smtp": {
+          "title": "SMTP Mail Relay",
+          "description": "Подготовьте реальный SMTP relay заранее, не откладывая почтовый transport панели на потом.",
+          "fields": {
+            "host": "SMTP host",
+            "hostPlaceholder": "smtp.example.com",
+            "port": "SMTP port",
+            "portPlaceholder": "587",
+            "user": "SMTP user",
+            "userPlaceholder": "smtp-user",
+            "password": "SMTP password",
+            "passwordPlaceholder": "SMTP password",
+            "fromName": "Имя отправителя",
+            "fromNamePlaceholder": "NOVUS Control Plane",
+            "fromEmail": "Email отправителя",
+            "fromEmailPlaceholder": "noreply{'@'}example.com",
+            "secure": "Защита транспорта",
+            "secureOptions": {
+              "tls": "TLS",
+              "ssl": "SSL",
+              "plain": "Без шифрования"
+            }
+          }
+        },
+        "novusAgent": {
+          "title": "NOVUS Agent",
+          "description": "Настройте URL установщика NOVUS Agent и заголовок авторизации для bootstrap-потоков агента.",
+          "fields": {
+            "installerUrl": "Installer URL",
+            "installerUrlPlaceholder": "https://github.com/SGC-NOVUS/agent/releases/latest/download/novus-agent-linux-amd64",
+            "authHeader": "Authorization header",
+            "authHeaderPlaceholder": "Bearer <token>"
+          }
+        }
+      }
+    },
+    "summary": {
+      "mode": "Режим",
+      "target": "Цель",
+      "targetPending": "Будет заполнено на шаге домена",
+      "admin": "Администратор",
+      "adminPending": "Будет заполнено на шаге профиля",
+      "ssl": "SSL",
+      "security": "Безопасность"
+    }
+  },
+  "install": {
+    "eyebrow": "Установка",
+    "title": "Установка NOVUS-OS выполняется",
+    "waiting": "Подготовка установки",
+    "connecting": "Подключение к сеансу установки",
+    "connected": "Соединение установлено",
+    "reconnecting": "Повторное подключение через 3 секунды",
+    "transport": "Поток шагов установки",
+    "failed": "Ошибка установки",
+    "finished": "Установка завершена",
+    "target": "Цель",
+    "admin": "Администратор",
+    "streamReady": "Ожидание PTY live stream..."
+  },
+  "success": {
+    "eyebrow": "Установка завершена",
+    "title": "Установка успешно завершена",
+    "body": "Панель установлена, защищённый URL входа готов.",
+    "openPanel": "Открыть панель"
+  },
+  "errors": {
+    "setupFailed": "Не удалось запустить установку.",
+    "localeLoad": "Не удалось загрузить переводы интерфейса. Будет использован английский язык.",
+    "restoreDisabled": "Для режима восстановления нужен корректный источник и материал для разблокировки.",
+    "restoreFileRead": "Не удалось прочитать выбранный файл резервной копии.",
+    "clipboard": "Не удалось скопировать в буфер обмена в текущем контексте браузера.",
+    "integrationInvalid": "Заполните все обязательные поля провайдера перед сохранением.",
+    "securityEntranceInvalid": "Path Security Entrance должен быть валидным и не входить в список зарезервированных сегментов."
+  }
+}
