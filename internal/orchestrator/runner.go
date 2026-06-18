@@ -1054,24 +1054,6 @@ func stackInstallCommand() string {
 }
 
 func mariaDBConfigurationCommand(req SetupRequest) string {
-	sql := fmt.Sprintf(
-		"ALTER USER 'root'@'localhost' IDENTIFIED BY '%s'; CREATE DATABASE IF NOT EXISTS %s; CREATE DATABASE IF NOT EXISTS %s; CREATE DATABASE IF NOT EXISTS %s; CREATE USER IF NOT EXISTS '%s'@'localhost' IDENTIFIED BY '%s'; CREATE USER IF NOT EXISTS '%s'@'localhost' IDENTIFIED BY '%s'; GRANT ALL PRIVILEGES ON %s.* TO '%s'@'localhost'; GRANT ALL PRIVILEGES ON %s.* TO '%s'@'localhost'; GRANT ALL PRIVILEGES ON %s.* TO '%s'@'localhost'; FLUSH PRIVILEGES;",
-		escapeSQLLiteral(req.DBRootPassword),
-		defaultOSDBName,
-		defaultIDDBName,
-		defaultSDDBName,
-		defaultSystemDBUser,
-		escapeSQLLiteral(req.DBPanelPassword),
-		defaultIdentityDBUser,
-		escapeSQLLiteral(req.DBPanelPassword),
-		defaultOSDBName,
-		defaultSystemDBUser,
-		defaultIDDBName,
-		defaultIdentityDBUser,
-		defaultSDDBName,
-		defaultSystemDBUser,
-	)
-
 	// Use mariadb (modern) with mysql fallback for older installs.
 	// Pass SQL via stdin (pipe) to avoid shell escaping issues with special chars in passwords.
 	// Also sanitize passwords — remove shell-dangerous chars as a safety net.
