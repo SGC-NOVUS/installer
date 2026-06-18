@@ -1539,7 +1539,16 @@ async function bootstrap() {
           payload = JSON.parse(raw);
         } catch (_) {
           if (term) {
-            term.write(raw);
+            let safeRaw = raw;
+            // Mask IDENTIFIED BY 'password' or IDENTIFIED BY "password"
+            safeRaw = safeRaw.replace(/(IDENTIFIED\s+BY\s*(?:'|"|'"'"'))([^'"\\]+)(?:'|"|'"'"')/gi, '$1***$3');
+            // Mask GitHub tokens
+            safeRaw = safeRaw.replace(/(ghp_[a-zA-Z0-9]+)/g, 'ghp_***');
+            // Mask Authorization headers
+            safeRaw = safeRaw.replace(/(Authorization:\s*(?:token|Bearer)\s+)([a-zA-Z0-9_.-]+)/gi, '$1***');
+            // General password/secret masking in assignments
+            safeRaw = safeRaw.replace(/((?:password|secret|key|token)[=:]\s*'?)([a-zA-Z0-9_!@#$%^&*()-]+)('?)/gi, '$1***$3');
+            term.write(safeRaw);
           }
           return;
         }
@@ -1654,9 +1663,9 @@ async function bootstrap() {
         fitAddon = new FitAddon();
         term = new Terminal({
           cursorBlink: true,
-          convertEol: false,
+          convertEol: true,
           fontFamily: 'JetBrains Mono, ui-monospace, monospace',
-          fontSize: 14,
+          fontSize: 13,
           lineHeight: 1.25,
           letterSpacing: 0.15,
           scrollback: 10000,

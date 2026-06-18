@@ -3139,12 +3139,12 @@
 
                         <div v-if="restoreInputMode === 'url'" class="field-group">
                           <label for="restore-url" class="field-label">{{ t('wizard.restore.bundleUrl') }}</label>
-                          <input id="restore-url" v-model.trim="form.restore.backupUrl" type="url" class="field-control" :placeholder="t('wizard.restore.bundleUrlPlaceholder')">
+                          <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="restore-url" v-model.trim="form.restore.backupUrl" type="url" class="field-control" :placeholder="t('wizard.restore.bundleUrlPlaceholder')">
                         </div>
 
                         <div v-else-if="restoreInputMode === 'upload'" class="field-group">
                           <label for="restore-upload" class="field-label">{{ t('wizard.restore.bundleUpload') }}</label>
-                          <input id="restore-upload" type="file" accept=".json,.sgcenc.json,application/json,text/plain" class="field-control" style="height:auto; padding:0.8rem 1rem;" @change="handleRestoreFileSelection">
+                          <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="restore-upload" type="file" accept=".json,.sgcenc.json,application/json,text/plain" class="field-control" style="height:auto; padding:0.8rem 1rem;" @change="handleRestoreFileSelection">
                           <div class="surface-meta">{{ form.restore.localFileName || t('wizard.restore.bundleUploadHint') }}</div>
                         </div>
 
@@ -3174,18 +3174,18 @@
                         </div>
 
                         <div v-if="restoreKeyMode === 'manual'" class="field-group">
-                          <textarea id="restore-key" v-model.trim="form.restore.keyMaterial" rows="4" class="field-control" :placeholder="t('wizard.restore.keyMaterialPlaceholder')"></textarea>
+                          <textarea data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="restore-key" v-model.trim="form.restore.keyMaterial" rows="4" class="field-control" :placeholder="t('wizard.restore.keyMaterialPlaceholder')"></textarea>
                         </div>
 
                         <div v-else-if="restoreKeyMode === 'upload'" class="field-group">
-                          <input id="restore-key-file" type="file" accept=".key,.txt,.json,application/json,text/plain" class="field-control" style="height:auto; padding:0.8rem 1rem;" @change="handleRestoreKeyFileSelection">
+                          <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="restore-key-file" type="file" accept=".key,.txt,.json,application/json,text/plain" class="field-control" style="height:auto; padding:0.8rem 1rem;" @change="handleRestoreKeyFileSelection">
                           <div class="surface-meta">{{ form.restore.keyFileName || t('wizard.restore.keyFileHint') }}</div>
                         </div>
 
                         <div class="field-group">
                           <label for="restore-key-password" class="field-label">{{ t('wizard.restore.keyPassword') }}</label>
                           <div class="field-shell">
-                            <input id="restore-key-password" v-model="form.restore.keyPassword" :type="isVisible('restoreKeyPassword') ? 'text' : 'password'" autocomplete="new-password" :placeholder="t('wizard.restore.keyPasswordPlaceholder')" class="field-control field-control--with-action">
+                            <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="restore-key-password" v-model="form.restore.keyPassword" :type="isVisible('restoreKeyPassword') ? 'text' : 'password'" autocomplete="new-password" :placeholder="t('wizard.restore.keyPasswordPlaceholder')" class="field-control field-control--with-action">
                             <button type="button" class="field-action" @click="toggleVisibility('restoreKeyPassword')">
                               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path v-if="isVisible('restoreKeyPassword')" d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.89 1 12c.92-2.6 2.76-4.81 5.06-6.32"></path>
@@ -3200,7 +3200,7 @@
 
                         <div class="field-group">
                           <label for="restore-phrase" class="field-label">{{ t('wizard.restore.recoveryPhrase') }}</label>
-                          <textarea id="restore-phrase" v-model.trim="form.restore.recoveryPhrase" rows="4" class="field-control" :placeholder="t('wizard.restore.recoveryPhrasePlaceholder')"></textarea>
+                          <textarea data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="restore-phrase" v-model.trim="form.restore.recoveryPhrase" rows="4" class="field-control" :placeholder="t('wizard.restore.recoveryPhrasePlaceholder')"></textarea>
                         </div>
 
                         <div class="metrics-grid summary-grid--2">
@@ -3245,7 +3245,7 @@
                               <div class="help-popover-body">{{ t('wizard.domain.domainHelp') }}</div>
                             </details>
                           </div>
-                          <input id="panel-url" v-model.trim="form.panelUrl" type="text" autocomplete="url" :placeholder="t('wizard.domain.placeholder')" class="field-control" @blur="normalizeDomainInput">
+                          <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="panel-url" v-model.trim="form.panelUrl" type="text" autocomplete="url" :placeholder="t('wizard.domain.placeholder')" class="field-control" @blur="normalizeDomainInput">
                           <div class="surface-meta">{{ t('wizard.domain.domainTip') }}</div>
                         </div>
                       </div>
@@ -3284,7 +3284,7 @@
                         <div class="field-group">
                           <label for="cloudflare-token" class="field-label">{{ t('wizard.domain.cloudflareToken') }}</label>
                           <div class="field-shell">
-                            <input id="cloudflare-token" v-model.trim="form.cloudflareApiToken" :type="isVisible('cloudflareSslToken') ? 'text' : 'password'" autocomplete="off" :placeholder="t('wizard.domain.cloudflarePlaceholder')" class="field-control field-control--with-action">
+                            <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="cloudflare-token" v-model.trim="form.cloudflareApiToken" :type="isVisible('cloudflareSslToken') ? 'text' : 'password'" autocomplete="off" :placeholder="t('wizard.domain.cloudflarePlaceholder')" class="field-control field-control--with-action">
                             <button type="button" class="field-action" @click="toggleVisibility('cloudflareSslToken')">
                               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path v-if="isVisible('cloudflareSslToken')" d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.89 1 12c.92-2.6 2.76-4.81 5.06-6.32"></path>
@@ -3302,13 +3302,13 @@
                         <div class="surface-card">
                           <div class="field-group">
                             <label for="custom-certificate" class="field-label">{{ t('wizard.domain.customCertificate') }}</label>
-                            <textarea id="custom-certificate" v-model.trim="form.customCertificate" rows="6" :placeholder="t('wizard.domain.customCertificatePlaceholder')" class="field-control"></textarea>
+                            <textarea data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="custom-certificate" v-model.trim="form.customCertificate" rows="6" :placeholder="t('wizard.domain.customCertificatePlaceholder')" class="field-control"></textarea>
                           </div>
                         </div>
                         <div class="surface-card">
                           <div class="field-group">
                             <label for="custom-private-key" class="field-label">{{ t('wizard.domain.customPrivateKey') }}</label>
-                            <textarea id="custom-private-key" v-model.trim="form.customPrivateKey" rows="6" :placeholder="t('wizard.domain.customPrivateKeyPlaceholder')" class="field-control"></textarea>
+                            <textarea data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="custom-private-key" v-model.trim="form.customPrivateKey" rows="6" :placeholder="t('wizard.domain.customPrivateKeyPlaceholder')" class="field-control"></textarea>
                           </div>
                         </div>
                       </div>
@@ -3326,7 +3326,7 @@
                           </div>
                         </div>
                         <label class="toggle-switch">
-                          <input v-model="form.securityEntrance.enabled" type="checkbox" @change="handleSecurityEntranceToggle">
+                          <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" v-model="form.securityEntrance.enabled" type="checkbox" @change="handleSecurityEntranceToggle">
                           <span class="toggle-track"></span>
                         </label>
                       </div>
@@ -3340,7 +3340,7 @@
                               <div class="help-popover-body">{{ t('wizard.domain.securityEntrance.pathHelp') }}</div>
                             </details>
                           </div>
-                          <input id="security-entrance-path" v-model.trim="form.securityEntrance.path" type="text" class="field-control" :placeholder="t('wizard.domain.securityEntrance.pathPlaceholder')">
+                          <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="security-entrance-path" v-model.trim="form.securityEntrance.path" type="text" class="field-control" :placeholder="t('wizard.domain.securityEntrance.pathPlaceholder')">
                         </div>
                         <template v-if="isStepAdvanced(2)">
                           <div class="field-group">
@@ -3351,7 +3351,7 @@
                                 <div class="help-popover-body">{{ t('wizard.domain.securityEntrance.portHelp') }}</div>
                               </details>
                             </div>
-                            <input id="security-entrance-port" v-model.number="form.securityEntrance.port" type="number" min="0" max="65535" class="field-control" :placeholder="t('wizard.domain.securityEntrance.portPlaceholder')">
+                            <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="security-entrance-port" v-model.number="form.securityEntrance.port" type="number" min="0" max="65535" class="field-control" :placeholder="t('wizard.domain.securityEntrance.portPlaceholder')">
                           </div>
                           <div class="field-group">
                             <div class="inline-label-row">
@@ -3361,7 +3361,7 @@
                                 <div class="help-popover-body">{{ t('wizard.domain.securityEntrance.windowHelp') }}</div>
                               </details>
                             </div>
-                            <input id="security-entrance-window" v-model.number="form.securityEntrance.windowSeconds" type="number" min="30" max="86400" class="field-control">
+                            <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="security-entrance-window" v-model.number="form.securityEntrance.windowSeconds" type="number" min="30" max="86400" class="field-control">
                           </div>
                           <div class="field-group">
                             <div class="inline-label-row">
@@ -3371,7 +3371,7 @@
                                 <div class="help-popover-body">{{ t('wizard.domain.securityEntrance.attemptsHelp') }}</div>
                               </details>
                             </div>
-                            <input id="security-entrance-attempts" v-model.number="form.securityEntrance.maxAttempts" type="number" min="1" max="1000" class="field-control">
+                            <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="security-entrance-attempts" v-model.number="form.securityEntrance.maxAttempts" type="number" min="1" max="1000" class="field-control">
                           </div>
                           <div class="field-group">
                             <div class="inline-label-row">
@@ -3381,7 +3381,7 @@
                                 <div class="help-popover-body">{{ t('wizard.domain.securityEntrance.blockHelp') }}</div>
                               </details>
                             </div>
-                            <input id="security-entrance-block" v-model.number="form.securityEntrance.blockSeconds" type="number" min="60" max="604800" class="field-control">
+                            <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="security-entrance-block" v-model.number="form.securityEntrance.blockSeconds" type="number" min="60" max="604800" class="field-control">
                           </div>
                         </template>
                       </div>
@@ -3403,12 +3403,12 @@
                     <div class="surface-card">
                       <div class="field-group">
                         <label for="admin-email" class="field-label">{{ t('wizard.admin.email') }}</label>
-                        <input id="admin-email" :value="form.adminEmail" type="email" autocomplete="email" :placeholder="t('wizard.admin.emailPlaceholder')" class="field-control" @input="handleAdminEmailInput">
+                        <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="admin-email" :value="form.adminEmail" type="email" autocomplete="email" :placeholder="t('wizard.admin.emailPlaceholder')" class="field-control" @input="handleAdminEmailInput">
                       </div>
 
                       <div class="field-group">
                         <label for="admin-login" class="field-label">{{ t('wizard.admin.login') }}</label>
-                        <input id="admin-login" :value="form.adminUsername || suggestedAdminUsername" type="text" autocomplete="username" :placeholder="t('wizard.admin.loginPlaceholder')" class="field-control" @input="handleAdminLoginInput">
+                        <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="admin-login" :value="form.adminUsername || suggestedAdminUsername" type="text" autocomplete="username" :placeholder="t('wizard.admin.loginPlaceholder')" class="field-control" @input="handleAdminLoginInput">
                         <div class="surface-meta">{{ t('wizard.admin.loginHint') }}</div>
                       </div>
 
@@ -3418,7 +3418,7 @@
                           <button type="button" class="pill pill--accent" @click="generatePassword('adminPassword', true)">{{ t('wizard.admin.generateAndCopy') }}</button>
                         </div>
                         <div class="field-shell">
-                          <input id="admin-password" v-model="form.adminPassword" :type="isVisible('adminPassword') ? 'text' : 'password'" autocomplete="new-password" :placeholder="t('wizard.admin.passwordPlaceholder')" class="field-control field-control--with-action">
+                          <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="admin-password" v-model="form.adminPassword" :type="isVisible('adminPassword') ? 'text' : 'password'" autocomplete="new-password" :placeholder="t('wizard.admin.passwordPlaceholder')" class="field-control field-control--with-action">
                           <button type="button" class="field-action" @click="toggleVisibility('adminPassword')">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                               <path v-if="isVisible('adminPassword')" d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.89 1 12c.92-2.6 2.76-4.81 5.06-6.32"></path>
@@ -3437,7 +3437,7 @@
                       <div class="field-group">
                         <label for="admin-password-confirm" class="field-label">{{ t('wizard.admin.confirmPassword') }}</label>
                         <div class="field-shell">
-                          <input id="admin-password-confirm" v-model="form.adminPasswordConfirm" :type="isVisible('adminPasswordConfirm') ? 'text' : 'password'" autocomplete="new-password" :placeholder="t('wizard.admin.confirmPasswordPlaceholder')" class="field-control field-control--with-action">
+                          <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="admin-password-confirm" v-model="form.adminPasswordConfirm" :type="isVisible('adminPasswordConfirm') ? 'text' : 'password'" autocomplete="new-password" :placeholder="t('wizard.admin.confirmPasswordPlaceholder')" class="field-control field-control--with-action">
                           <button type="button" class="field-action" @click="toggleVisibility('adminPasswordConfirm')">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                               <path v-if="isVisible('adminPasswordConfirm')" d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.89 1 12c.92-2.6 2.76-4.81 5.06-6.32"></path>
@@ -3497,7 +3497,7 @@
                             <button type="button" class="pill pill--accent" @click="generatePassword('dbRootPassword')">{{ t('wizard.database.generateAndCopy') }}</button>
                           </div>
                           <div class="field-shell">
-                            <input id="db-root-password" v-model="form.dbRootPassword" :type="isVisible('dbRootPassword') ? 'text' : 'password'" autocomplete="new-password" :placeholder="t('wizard.database.rootPlaceholder')" class="field-control field-control--with-action">
+                            <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="db-root-password" v-model="form.dbRootPassword" :type="isVisible('dbRootPassword') ? 'text' : 'password'" autocomplete="new-password" :placeholder="t('wizard.database.rootPlaceholder')" class="field-control field-control--with-action">
                             <button type="button" class="field-action" @click="toggleVisibility('dbRootPassword')">
                               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path v-if="isVisible('dbRootPassword')" d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.89 1 12c.92-2.6 2.76-4.81 5.06-6.32"></path>
@@ -3516,7 +3516,7 @@
                             <button type="button" class="pill pill--accent" @click="generatePassword('dbPanelPassword')">{{ t('wizard.database.generateAndCopy') }}</button>
                           </div>
                           <div class="field-shell">
-                            <input id="db-panel-password" v-model="form.dbPanelPassword" :type="isVisible('dbPanelPassword') ? 'text' : 'password'" autocomplete="new-password" :placeholder="t('wizard.database.panelPlaceholder')" class="field-control field-control--with-action">
+                            <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="db-panel-password" v-model="form.dbPanelPassword" :type="isVisible('dbPanelPassword') ? 'text' : 'password'" autocomplete="new-password" :placeholder="t('wizard.database.panelPlaceholder')" class="field-control field-control--with-action">
                             <button type="button" class="field-action" @click="toggleVisibility('dbPanelPassword')">
                               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path v-if="isVisible('dbPanelPassword')" d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.89 1 12c.92-2.6 2.76-4.81 5.06-6.32"></path>
@@ -3612,7 +3612,7 @@
                         </div>
                         <div class="field-group">
                           <label for="master-key" class="field-label">{{ t('wizard.security.keyLabel') }}</label>
-                          <textarea id="master-key" v-model.trim="form.masterKey" rows="4" :placeholder="t('wizard.security.keyPlaceholder')" class="field-control"></textarea>
+                          <textarea data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="master-key" v-model.trim="form.masterKey" rows="4" :placeholder="t('wizard.security.keyPlaceholder')" class="field-control"></textarea>
                         </div>
                       </div>
                     </div>
@@ -3624,7 +3624,7 @@
                         <div class="field-group">
                           <label for="cloudflare-kms-token" class="field-label">{{ t('wizard.security.cloudflareToken') }}</label>
                           <div class="field-shell">
-                            <input id="cloudflare-kms-token" v-model.trim="form.cloudflareKms.apiToken" :type="isVisible('cloudflareKmsToken') ? 'text' : 'password'" autocomplete="off" :placeholder="t('wizard.security.cloudflareTokenPlaceholder')" class="field-control field-control--with-action">
+                            <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="cloudflare-kms-token" v-model.trim="form.cloudflareKms.apiToken" :type="isVisible('cloudflareKmsToken') ? 'text' : 'password'" autocomplete="off" :placeholder="t('wizard.security.cloudflareTokenPlaceholder')" class="field-control field-control--with-action">
                             <button type="button" class="field-action" @click="toggleVisibility('cloudflareKmsToken')">
                               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path v-if="isVisible('cloudflareKmsToken')" d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.89 1 12c.92-2.6 2.76-4.81 5.06-6.32"></path>
@@ -3639,11 +3639,11 @@
                         </div>
                         <div class="field-group">
                           <label for="cloudflare-kms-account" class="field-label">{{ t('wizard.security.cloudflareAccountId') }}</label>
-                          <input id="cloudflare-kms-account" v-model.trim="form.cloudflareKms.accountId" type="text" class="field-control" :placeholder="t('wizard.security.cloudflareAccountPlaceholder')">
+                          <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="cloudflare-kms-account" v-model.trim="form.cloudflareKms.accountId" type="text" class="field-control" :placeholder="t('wizard.security.cloudflareAccountPlaceholder')">
                         </div>
                         <div class="field-group">
                           <label for="cloudflare-kms-worker" class="field-label">{{ t('wizard.security.cloudflareWorkerUrl') }}</label>
-                          <input id="cloudflare-kms-worker" v-model.trim="form.cloudflareKms.workerUrl" type="url" class="field-control" :placeholder="t('wizard.security.cloudflareWorkerPlaceholder')">
+                          <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="cloudflare-kms-worker" v-model.trim="form.cloudflareKms.workerUrl" type="url" class="field-control" :placeholder="t('wizard.security.cloudflareWorkerPlaceholder')">
                         </div>
                       </div>
 
@@ -3652,19 +3652,19 @@
                         <p class="surface-copy">{{ t('wizard.security.cloudflareAdvancedBody') }}</p>
                         <div class="field-group">
                           <label for="cloudflare-kms-script" class="field-label">{{ t('wizard.security.cloudflareScriptName') }}</label>
-                          <input id="cloudflare-kms-script" v-model.trim="form.cloudflareKms.scriptName" type="text" class="field-control">
+                          <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="cloudflare-kms-script" v-model.trim="form.cloudflareKms.scriptName" type="text" class="field-control">
                         </div>
                         <div class="field-group">
                           <label for="cloudflare-kms-namespace" class="field-label">{{ t('wizard.security.cloudflareNamespaceTitle') }}</label>
-                          <input id="cloudflare-kms-namespace" v-model.trim="form.cloudflareKms.namespaceTitle" type="text" class="field-control">
+                          <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="cloudflare-kms-namespace" v-model.trim="form.cloudflareKms.namespaceTitle" type="text" class="field-control">
                         </div>
                         <div class="field-group">
                           <label for="cloudflare-kms-zone" class="field-label">{{ t('wizard.security.cloudflareZoneId') }}</label>
-                          <input id="cloudflare-kms-zone" v-model.trim="form.cloudflareKms.zoneId" type="text" class="field-control" :placeholder="t('wizard.security.cloudflareZonePlaceholder')">
+                          <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="cloudflare-kms-zone" v-model.trim="form.cloudflareKms.zoneId" type="text" class="field-control" :placeholder="t('wizard.security.cloudflareZonePlaceholder')">
                         </div>
                         <div class="field-group">
                           <label for="cloudflare-kms-route" class="field-label">{{ t('wizard.security.cloudflareRoutePattern') }}</label>
-                          <input id="cloudflare-kms-route" v-model.trim="form.cloudflareKms.routePattern" type="text" class="field-control" :placeholder="t('wizard.security.cloudflareRoutePlaceholder')">
+                          <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" id="cloudflare-kms-route" v-model.trim="form.cloudflareKms.routePattern" type="text" class="field-control" :placeholder="t('wizard.security.cloudflareRoutePlaceholder')">
                         </div>
                       </div>
                     </div>
@@ -3830,7 +3830,7 @@
                       <p class="surface-copy">{{ t('wizard.integrations.enableBody') }}</p>
                     </div>
                     <label class="toggle-switch">
-                      <input v-model="integrationModal.enabled" type="checkbox">
+                      <input data-bwignore="true" data-1p-ignore="true" autocomplete="off" v-model="integrationModal.enabled" type="checkbox">
                       <span class="toggle-track"></span>
                     </label>
                   </div>
@@ -3850,7 +3850,7 @@
                         <option v-for="option in field.options" :key="option.value" :value="option.value">{{ t(option.labelKey) }}</option>
                       </select>
 
-                      <textarea
+                      <textarea data-bwignore="true" data-1p-ignore="true" autocomplete="off"
                         v-else-if="field.type === 'textarea'"
                         :id="'integration-' + field.key"
                         v-model.trim="integrationModal.fields[field.key]"
@@ -3860,7 +3860,7 @@
                       ></textarea>
 
                       <div v-else class="field-shell">
-                        <input
+                        <input data-bwignore="true" data-1p-ignore="true" autocomplete="off"
                           :id="'integration-' + field.key"
                           v-model.trim="integrationModal.fields[field.key]"
                           :type="field.secret && !isVisible(field.key) ? 'password' : (field.type === 'number' ? 'text' : 'text')"
@@ -3974,7 +3974,9 @@
                   </div>
                   <span>root@novus-installer</span>
                 </div>
-                <div ref="terminalEl" id="terminal" class="min-h-0 flex-1 overflow-hidden p-4"></div>
+                <div class="min-h-0 flex-1 flex flex-col p-4 overflow-hidden">
+                  <div ref="terminalEl" id="terminal" class="w-full h-full overflow-hidden"></div>
+                </div>
               </div>
             </div>
           </div>
