@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	installerassets "github.com/sgc-novus/novus-installer"
 	"github.com/sgc-novus/novus-installer/internal/orchestrator"
 	assets "github.com/sgc-novus/novus-installer/web"
 )
@@ -50,14 +49,14 @@ func New(cfg Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	logoBytes, err := installerassets.LogoBytes()
+	faviconBytes, err := fs.ReadFile(distFS, "assets/novus-logo-320.png")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("embedded_favicon_not_found: %w", err)
 	}
 
 	server := &Server{
 		token:       cfg.Token,
-		logo:        logoBytes,
+		logo:        faviconBytes,
 		baseContext: cfg.BaseContext,
 		broadcaster: NewBroadcaster(),
 	}
@@ -68,8 +67,8 @@ func New(cfg Config) (*Server, error) {
 	})
 
 	mux := http.NewServeMux()
-	mux.Handle("/favicon.ico", server.staticAssetHandler("image/svg+xml", server.logo))
-	mux.Handle("/logo.svg", server.staticAssetHandler("image/svg+xml", server.logo))
+	mux.Handle("/favicon.ico", server.staticAssetHandler("image/png", server.logo))
+	mux.Handle("/logo.png", server.staticAssetHandler("image/png", server.logo))
 	mux.Handle("/api/locales/", server.requireAuthorizedSession(http.HandlerFunc(server.handleLocale)))
 	mux.Handle("/api/stream", server.requireAuthorizedSession(http.HandlerFunc(server.handleStream)))
 	mux.Handle("/api/setup", server.requireAuthorizedSession(http.HandlerFunc(server.handleSetup)))
