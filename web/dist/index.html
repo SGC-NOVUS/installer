@@ -3939,12 +3939,15 @@
             </button>
           </div>
 
-          <div style="background-color: #10b981; color: white; padding: 0.6rem 1rem; border-radius: 6px; margin: 0 1.25rem 1rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-top: 4rem;">
-            <span style="font-size: 0.95rem; font-weight: 500;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 1.2rem; height: 1.2rem; margin-right: 0.4rem; display: inline-block; vertical-align: text-bottom;"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
-              Установка началась. Пароли сгенерированы, сохраните их.
+          <div style="position: fixed; top: 1.5rem; left: 50%; transform: translateX(-50%); z-index: 9999; background-color: #10b981; color: white; padding: 0.6rem 1rem 0.6rem 1.25rem; border-radius: 8px; display: flex; gap: 1rem; align-items: center; box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4), 0 8px 10px -6px rgba(16, 185, 129, 0.2); border: 1px solid rgba(255,255,255,0.2); max-width: 90vw; animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+            <style>
+              @keyframes slideDown { from { transform: translate(-50%, -120%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+            </style>
+            <span style="font-size: 0.95rem; font-weight: 500; display: flex; align-items: center; white-space: nowrap;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 1.2rem; height: 1.2rem; margin-right: 0.5rem; flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+              Пароли сгенерированы! Сохраните их:
             </span>
-            <button type="button" @click="downloadCredentials" style="background: white; color: #10b981; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.9" onmouseout="this.style.opacity=1">Скачать пароли (TXT)</button>
+            <button type="button" @click="downloadCredentials" style="background: white; color: #10b981; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">Скачать TXT</button>
           </div>
 
           <div class="install-inner">
@@ -4695,7 +4698,7 @@
             };
 
             const downloadCredentials = () => {
-              const url = form.sslMode === 'none' ? 'http://' + form.panelUrl : 'https://' + form.panelUrl;
+              const url = form.sslMode === 'none' ? 'http://' + form.domain : 'https://' + form.domain;
               const text = `NOVUS-OS Installation Credentials\n\n` +
                            `Panel URL: ${url}\n` +
                            `Admin Email: ${form.adminEmail}\n` +
@@ -4707,7 +4710,10 @@
               const a = document.createElement('a');
               a.href = URL.createObjectURL(blob);
               a.download = 'novus-credentials.txt';
+              document.body.appendChild(a);
               a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(a.href);
             };
 
             const advanceWizard = () => {
