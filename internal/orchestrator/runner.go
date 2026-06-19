@@ -1409,10 +1409,13 @@ chmod($path, 0400);
 chown($path, 'www-data');
 `
 		tmpPhp := filepath.Join("/tmp", "novus_canary_gen.php")
-		if err := os.WriteFile(tmpPhp, []byte(phpScript), 0o600); err == nil {
+		if err := os.WriteFile(tmpPhp, []byte(phpScript), 0o644); err == nil {
 			_ = r.runPTYCommand(ctx, "sudo -u www-data php "+tmpPhp)
 			_ = os.Remove(tmpPhp)
 		}
+
+		// Cleanup any stale emergency files from previous failed runs
+		_ = os.Remove(filepath.Join(panelInstallRoot, "storage", "app", "secure", ".novus_emergency"))
 
 		// Generate and write jwt_secret
 		jwtSecretBytes := make([]byte, 32)
