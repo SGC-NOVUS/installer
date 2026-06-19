@@ -447,6 +447,8 @@ func (r *Runner) fullCleanup(ctx context.Context, req SetupRequest) error {
 	// Reload systemd.
 	_ = os.Remove("/etc/systemd/system/novus-agent.service")
 	_ = os.Remove("/etc/systemd/system/sgc-agent.service")
+	_ = os.RemoveAll("/etc/systemd/system/php8.5-fpm.service.d")
+	_ = r.runPTYCommand(ctx, "systemctl reset-failed php8.5-fpm 2>/dev/null || true")
 	_ = r.runPTYCommand(ctx, "systemctl daemon-reload 2>/dev/null || true")
 
 	return nil
@@ -1110,6 +1112,7 @@ func stackInstallCommand() string {
 		"mkdir -p /etc/systemd/system/php8.5-fpm.service.d 2>/dev/null || true",
 		"echo -e '[Service]\\nReadWritePaths=-/etc/novus/secrets' > /etc/systemd/system/php8.5-fpm.service.d/override.conf || true",
 		"systemctl daemon-reload 2>/dev/null || true",
+		"systemctl reset-failed php8.5-fpm 2>/dev/null || true",
 		"systemctl restart php8.5-fpm 2>/dev/null || true",
 	}, " && ")
 }
