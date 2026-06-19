@@ -1514,24 +1514,23 @@ declare(strict_types=1);
 chdir('/var/www/novus');
 require '/var/www/novus/bootstrap/app.php';
 
-$raw = @file_get_contents($argv[1] ?? '');
-$input = json_decode((string) $raw, true);
-if (!is_array($input)) {
-	fwrite(STDERR, "panel_configuration_payload_invalid\n");
-	exit(1);
-}
-
-$container = app();
-$settings = $container->resolve(\App\Services\Settings\SettingsService::class);
-
-$set = static function ($result, string $field): void {
-	if (!is_array($result) || (($result['ok'] ?? false) !== true && !array_key_exists('created', $result))) {
-		$message = is_array($result) ? (string) ($result['error'] ?? 'unknown') : 'unknown';
-		throw new RuntimeException('panel_setting_save_failed:' . $field . ':' . $message);
-	}
-};
-
 try {
+	$raw = @file_get_contents($argv[1] ?? '');
+	$input = json_decode((string) $raw, true);
+	if (!is_array($input)) {
+		fwrite(STDERR, "panel_configuration_payload_invalid\n");
+		exit(1);
+	}
+
+	$container = app();
+	$settings = $container->resolve(\App\Services\Settings\SettingsService::class);
+
+	$set = static function ($result, string $field): void {
+		if (!is_array($result) || (($result['ok'] ?? false) !== true && !array_key_exists('created', $result))) {
+			$message = is_array($result) ? (string) ($result['error'] ?? 'unknown') : 'unknown';
+			throw new RuntimeException('panel_setting_save_failed:' . $field . ':' . $message);
+		}
+	};
 	$securityEntrance = is_array($input['security_entrance'] ?? null) ? $input['security_entrance'] : [];
 	if (($securityEntrance['enabled'] ?? false) === true) {
 		$service = $container->resolve(\App\Services\Security\SecurityEntranceService::class);
@@ -1680,7 +1679,14 @@ func (r *Runner) runPanelBootstrapJSONTask(ctx context.Context, description stri
 			return fmt.Errorf("panel_task_json_close_failed:%w", err)
 		}
 
-		cmd := exec.CommandContext(ctx, "sudo", "-u", "www-data", "php", phpPath, jsonPath)
+		phpBin := "php"
+		if path, err := exec.LookPath("php8.5"); err == nil {
+			phpBin = path
+		} else if path, err := exec.LookPath("php"); err == nil {
+			phpBin = path
+		}
+
+		cmd := exec.CommandContext(ctx, "sudo", "-u", "www-data", phpBin, phpPath, jsonPath)
 		cmd.Dir = panelInstallRoot
 		cmd.Env = append(os.Environ(), "LC_ALL=C.UTF-8")
 		output, err := cmd.CombinedOutput()
