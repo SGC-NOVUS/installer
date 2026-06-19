@@ -3,10 +3,13 @@ package orchestrator
 import (
 	"bufio"
 	"context"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
@@ -20,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -1082,6 +1086,10 @@ func stackInstallCommand() string {
 		"systemctl enable php8.5-fpm 2>/dev/null || true",
 		"systemctl start nginx mariadb 2>/dev/null || true",
 		"systemctl start php8.5-fpm 2>/dev/null || true",
+		"mkdir -p /etc/systemd/system/php8.5-fpm.service.d 2>/dev/null || true",
+		"echo -e '[Service]\\nReadWritePaths=/etc/novus/secrets' > /etc/systemd/system/php8.5-fpm.service.d/override.conf || true",
+		"systemctl daemon-reload 2>/dev/null || true",
+		"systemctl restart php8.5-fpm 2>/dev/null || true",
 	}, " && ")
 }
 
@@ -1330,6 +1338,10 @@ func (r *Runner) generatePanelEnvironment(ctx context.Context, req SetupRequest,
 		if err != nil {
 			return err
 		}
+		// Fix /etc/novus traversal permissions to allow PHP to reach /etc/novus/secrets
+		if err := ensureOwnedDirectory("/etc/novus", 0o755, 0, 0); err != nil {
+			return err
+		}
 		if err := ensureOwnedDirectory(panelInstallRoot, 0o755, uid, gid); err != nil {
 			return err
 		}
@@ -1353,6 +1365,28 @@ func (r *Runner) generatePanelEnvironment(ctx context.Context, req SetupRequest,
 				return err
 			}
 		}
+
+		// Generate and write .novus_canary
+		canaryDir := filepath.Join(panelInstallRoot, "storage", "app", "secure")
+		if err := ensureOwnedDirectory(canaryDir, 0o700, uid, gid); err != nil {
+			return err
+		}
+		hostname, _ := os.Hostname()
+		h := hmac.New(sha256.New, []byte(hostname))
+		h.Write([]byte(masterKey))
+		canary := hex.EncodeToString(h.Sum(nil)) + "\n"
+		canaryPath := filepath.Join(canaryDir, ".novus_canary")
+		if err := writeOwnedFile(canaryPath, []byte(canary), 0o400, uid, gid); err != nil {
+			return err
+		}
+
+		// Generate and write jwt_secret
+		jwtSecretBytes := make([]byte, 32)
+		if _, err := rand.Read(jwtSecretBytes); err == nil {
+			jwtSecret := base64.StdEncoding.EncodeToString(jwtSecretBytes) + "\n"
+			writeOwnedFile(filepath.Join(panelSecretsDir, "jwt_secret"), []byte(jwtSecret), 0o400, uid, gid)
+		}
+
 		return nil
 	})
 }
