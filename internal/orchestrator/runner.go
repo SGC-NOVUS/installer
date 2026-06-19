@@ -1010,11 +1010,11 @@ func (r *Runner) runPTYCommand(ctx context.Context, command string) error {
 
 func (r *Runner) runLocalAction(ctx context.Context, description string, action func() error) error {
 	if r.dryRun {
-		r.writeLine(fmt.Sprintf("\x1b[33m[DRY-RUN] Would execute: %s\x1b[0m\r\n", description))
+		r.writeLine(fmt.Sprintf("\x1b[33m[DRY-RUN] Would execute local action: %s\x1b[0m\r\n", description))
 		return sleepContext(ctx, r.dryRunDelay)
 	}
 
-	r.writeLine(fmt.Sprintf("\x1b[33m$ %s\x1b[0m\r\n", description))
+	r.writeLine(fmt.Sprintf("\x1b[36m➜\x1b[0m \x1b[32m%s\x1b[0m\r\n", description))
 	if err := ctx.Err(); err != nil {
 		return err
 	}
