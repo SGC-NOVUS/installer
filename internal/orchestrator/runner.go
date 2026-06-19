@@ -3,13 +3,10 @@ package orchestrator
 import (
 	"bufio"
 	"context"
-	"crypto/hmac"
 	"crypto/rand"
-	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
@@ -36,20 +33,20 @@ import (
 )
 
 const (
-	osReleasePath          = "/etc/os-release"
-	defaultOSDBName        = "novus_os"
-	defaultIDDBName        = "novus_id"
-	defaultSDDBName        = "novus_sd"
-	defaultSystemDBUser    = "novus_panel"
-	defaultIdentityDBUser  = "novus_id"
-	defaultAgentAMD64URL   = "https://github.com/SGC-NOVUS/agent/releases/latest/download/novus-agent-linux-amd64"
-	defaultAgentARM64URL   = "https://github.com/SGC-NOVUS/agent/releases/latest/download/novus-agent-linux-arm64"
-	agentBinaryURLEnv      = "NOVUS_INSTALLER_AGENT_BINARY_URL"
+	osReleasePath         = "/etc/os-release"
+	defaultOSDBName       = "novus_os"
+	defaultIDDBName       = "novus_id"
+	defaultSDDBName       = "novus_sd"
+	defaultSystemDBUser   = "novus_panel"
+	defaultIdentityDBUser = "novus_id"
+	defaultAgentAMD64URL  = "https://github.com/SGC-NOVUS/agent/releases/latest/download/novus-agent-linux-amd64"
+	defaultAgentARM64URL  = "https://github.com/SGC-NOVUS/agent/releases/latest/download/novus-agent-linux-arm64"
+	agentBinaryURLEnv     = "NOVUS_INSTALLER_AGENT_BINARY_URL"
 	// Panel source: PRIVATE repository SGC-NOVUS/panel-core (NOT the empty public SGC-NOVUS/panel).
 	// Requires GitHub PAT with repo-read scope, set via NOVUS_INSTALLER_PANEL_RELEASE_URL
 	// or the env vars NOVUS_INSTALLER_GITHUB_PAT + NOVUS_INSTALLER_PANEL_RELEASE_URL.
 	// In the future, panels will be SourceGuard-encrypted and published to the public SGC-NOVUS/panel repo.
-	defaultPanelReleaseURL = ""  // Must be explicitly set via env — no default, we refuse to download from empty public repo.
+	defaultPanelReleaseURL = "" // Must be explicitly set via env — no default, we refuse to download from empty public repo.
 	panelReleaseURLEnv     = "NOVUS_INSTALLER_PANEL_RELEASE_URL"
 	panelCoreRepo          = "SGC-NOVUS/panel-core"
 	panelCoreArchivePath   = "panel.zip"
@@ -187,7 +184,7 @@ type SetupRequest struct {
 	MasterKey          string
 	MasterKeyBackend   string
 	GitHubPAT          string `json:"github_pat"` // GitHub PAT: backend receives as "github_pat" (via env) or "GitHubPAT" (from web form)
-	GitHubPATAlt       string `json:"GitHubPAT"`   // Web form sends this casing — will be merged in Validate()
+	GitHubPATAlt       string `json:"GitHubPAT"`  // Web form sends this casing — will be merged in Validate()
 	SecurityEntrance   SecurityEntranceConfig
 	Restore            RestoreConfig
 	CloudflareKMS      CloudflareKMSConfig
@@ -413,14 +410,14 @@ func (r *Runner) fullCleanup(ctx context.Context, req SetupRequest) error {
 
 	// Wipe paths.
 	for _, path := range []string{
-		panelInstallRoot,    // /var/www/novus
-		panelSecretsDir,     // /etc/novus/secrets
-		manifestDir,         // /etc/novus
-		sslAssetDir,         // /etc/novus/ssl
-		nginxSitePath,       // nginx site config
+		panelInstallRoot, // /var/www/novus
+		panelSecretsDir,  // /etc/novus/secrets
+		manifestDir,      // /etc/novus
+		sslAssetDir,      // /etc/novus/ssl
+		nginxSitePath,    // nginx site config
 		nginxSiteEnabledPath,
-		panelArchivePath,    // /tmp/panel.zip
-		agentDownloadPath,   // /tmp/novus-agent
+		panelArchivePath,  // /tmp/panel.zip
+		agentDownloadPath, // /tmp/novus-agent
 	} {
 		if err := os.RemoveAll(path); err != nil && !errors.Is(err, os.ErrNotExist) {
 			log.Printf("fullCleanup: remove %s: %v", path, err)
@@ -1270,7 +1267,7 @@ func buildFinishURL(domain string, sslMode string) string {
 	}
 
 	return scheme + "://" + domain
-	}
+}
 
 func panelDeploymentCommand(panelReleaseURL string, githubPAT string) string {
 	// If downloading from api.github.com (private repo), test PAT validity first.
@@ -1400,18 +1397,21 @@ func (r *Runner) generatePanelEnvironment(ctx context.Context, req SetupRequest,
 			}
 		}
 
-		// Generate and write .novus_canary
-		canaryDir := filepath.Join(panelInstallRoot, "storage", "app", "secure")
-		if err := ensureOwnedDirectory(canaryDir, 0o700, uid, gid); err != nil {
-			return err
-		}
-		hostname, _ := os.Hostname()
-		h := hmac.New(sha256.New, []byte(hostname))
-		h.Write([]byte(masterKey))
-		canary := hex.EncodeToString(h.Sum(nil)) + "\n"
-		canaryPath := filepath.Join(canaryDir, ".novus_canary")
-		if err := writeOwnedFile(canaryPath, []byte(canary), 0o400, uid, gid); err != nil {
-			return err
+		// Generate and write .novus_canary using PHP to ensure 100% hash match with panel
+		phpScript := `<?php
+$key = "` + masterKey + `";
+$canary = hash_hmac('sha256', $key, php_uname('n'));
+$dir = '/var/www/novus/storage/app/secure';
+if (!is_dir($dir)) { mkdir($dir, 0700, true); chown($dir, 'www-data'); }
+$path = $dir . '/.novus_canary';
+file_put_contents($path, $canary . "\n");
+chmod($path, 0400);
+chown($path, 'www-data');
+`
+		tmpPhp := filepath.Join("/tmp", "novus_canary_gen.php")
+		if err := os.WriteFile(tmpPhp, []byte(phpScript), 0o600); err == nil {
+			_ = r.runPTYCommand(ctx, "sudo -u www-data php "+tmpPhp)
+			_ = os.Remove(tmpPhp)
 		}
 
 		// Generate and write jwt_secret
@@ -1809,7 +1809,6 @@ func (r *Runner) runSystemHealthCheck(ctx context.Context, domain string) error 
 		}
 	})
 }
-
 
 func (r *Runner) maybeSelfDestruct() {
 	if r.devMode || r.dryRun {
