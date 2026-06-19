@@ -276,6 +276,14 @@ func (r *Runner) run(ctx context.Context, request SetupRequest) {
 		return
 	}
 
+	r.writeLine("\x1b[36m================================================\x1b[0m\r\n")
+	r.writeLine("\x1b[36m[i] Будет установлено:\x1b[0m\r\n")
+	r.writeLine(" - Nginx, MariaDB, Redis\r\n")
+	r.writeLine(" - PHP 8.5 (FPM, CLI, модули)\r\n")
+	r.writeLine(" - Fail2Ban, UFW, Supervisor, Certbot\r\n")
+	r.writeLine(" - SGC-NOVUS Panel и Agent\r\n")
+	r.writeLine("\x1b[36m================================================\x1b[0m\r\n\r\n")
+
 	platform, err := detectPlatformProfile()
 	if err != nil {
 		r.emitStatus(StatusMessage{Type: "error", Text: err.Error()})
@@ -372,7 +380,7 @@ func (r *Runner) rollback(ctx context.Context, request SetupRequest, completed [
 
 	// 2. Full cleanup: remove ALL installer artifacts unconditionally.
 	r.writeLine("\x1b[33m[ROLLBACK]\x1b[0m Полная очистка артефактов установки...\r\n")
-	if err := r.fullCleanup(ctx); err != nil {
+	if err := r.fullCleanup(ctx, request); err != nil {
 		r.writeLine(fmt.Sprintf("\x1b[31m[CLEANUP FAILED]\x1b[0m %s\r\n", err.Error()))
 		log.Printf("novus-installer full cleanup failed: %v", err)
 	} else {
@@ -384,7 +392,7 @@ func (r *Runner) rollback(ctx context.Context, request SetupRequest, completed [
 
 // fullCleanup removes all installer-created artifacts: panel root, DB data,
 // secrets, nginx configs, binary, manifest, etc. Runs on install failure.
-func (r *Runner) fullCleanup(ctx context.Context) error {
+func (r *Runner) fullCleanup(ctx context.Context, req SetupRequest) error {
 	if r.dryRun {
 		r.writeLine("[DRY-RUN] Would remove all NOVUS-OS artifacts.\r\n")
 		return nil
@@ -413,11 +421,15 @@ func (r *Runner) fullCleanup(ctx context.Context) error {
 
 	// Drop databases (if MariaDB is still running).
 	dropSQL := fmt.Sprintf(
-		"DROP DATABASE IF EXISTS %s; DROP DATABASE IF EXISTS %s; DROP DATABASE IF EXISTS %s; DROP USER IF EXISTS '%s'@'localhost'; DROP USER IF EXISTS '%s'@'localhost';",
+		"DROP DATABASE IF EXISTS %s; DROP DATABASE IF EXISTS %s; DROP DATABASE IF EXISTS %s; DROP USER IF EXISTS '%s'@'localhost'; DROP USER IF EXISTS '%s'@'localhost'; DROP USER IF EXISTS '%s'@'127.0.0.1'; DROP USER IF EXISTS '%s'@'127.0.0.1';",
 		defaultOSDBName, defaultIDDBName, defaultSDDBName,
-		defaultSystemDBUser, defaultIdentityDBUser,
+		defaultSystemDBUser, defaultIdentityDBUser, defaultSystemDBUser, defaultIdentityDBUser,
 	)
-	_ = r.runPTYCommand(ctx, "(mariadb -u root -e "+shellQuote(dropSQL)+" 2>/dev/null || mysql -u root -e "+shellQuote(dropSQL)+" 2>/dev/null || true)")
+	_ = r.runPTYCommand(ctx, "(mariadb -u root -p"+shellQuote(req.DBRootPassword)+" -e "+shellQuote(dropSQL)+" 2>/dev/null || mysql -u root -p"+shellQuote(req.DBRootPassword)+" -e "+shellQuote(dropSQL)+" 2>/dev/null || true)")
+
+	// Purge apt packages
+	_ = r.runPTYCommand(ctx, "DEBIAN_FRONTEND=noninteractive apt-get purge -y nginx mariadb-server php8.5-fpm php8.5-cli php8.5-mysql php8.5-mbstring php8.5-xml php8.5-curl php8.5-zip php8.5-bcmath php8.5-intl php8.5-gd php8.5-redis php8.5-grpc redis-server supervisor fail2ban certbot python3-certbot-nginx python3-certbot-dns-cloudflare 2>/dev/null || true")
+	_ = r.runPTYCommand(ctx, "DEBIAN_FRONTEND=noninteractive apt-get autoremove -y 2>/dev/null || true")
 
 	// Remove binary.
 	_ = os.Remove("/usr/local/bin/novus-agent")
@@ -949,7 +961,11 @@ func (r *Runner) runPTYCommand(ctx context.Context, command string) error {
 		return sleepContext(ctx, r.dryRunDelay)
 	}
 
-	r.writeLine(fmt.Sprintf("\x1b[33m$ %s\x1b[0m\r\n", command))
+	displayCmd := command
+	if len(displayCmd) > 150 {
+		displayCmd = displayCmd[:147] + "..."
+	}
+	r.writeLine(fmt.Sprintf("\x1b[33m$ %s\x1b[0m\r\n", displayCmd))
 
 	cmd := exec.CommandContext(ctx, "bash", "-lc", command)
 	cmd.Env = append(os.Environ(),
@@ -1388,6 +1404,9 @@ func (r *Runner) generatePanelEnvironment(ctx context.Context, req SetupRequest,
 			jwtSecret := base64.StdEncoding.EncodeToString(jwtSecretBytes) + "\n"
 			writeOwnedFile(filepath.Join(panelSecretsDir, "jwt_secret"), []byte(jwtSecret), 0o400, uid, gid)
 		}
+
+		// Ensure full directory ownership is restored in case intermediate directories were created as root
+		exec.CommandContext(ctx, "chown", "-R", "www-data:www-data", panelInstallRoot).Run()
 
 		return nil
 	})
