@@ -1280,7 +1280,7 @@ func panelBridgeCommand() string {
 		// "undefined symbol: zend_exception_get_default" → artisan breaks).
 		// The extension is restored after artisan commands so php-fpm has it.
 		"echo '[installer] Preparing artisan environment...' && " +
-			"GRPC_INI=$(php8.5 --ini 2>/dev/null | grep -i 'grpc' | awk '{print $NF}' | head -1 || true) && " +
+			"GRPC_INI=$(php8.5 --ini 2>/dev/null | grep -i 'grpc\\.ini' | sed 's/.*: *//; s/[, ].*//' | head -1 || true) && " +
 			"([ -z \"$GRPC_INI\" ] || [ ! -f \"$GRPC_INI\" ] || mv \"$GRPC_INI\" \"${GRPC_INI}.novus_bak\" 2>/dev/null || true) && " +
 			"(" +
 			"echo '[installer] Running artisan migrate...' && " +
