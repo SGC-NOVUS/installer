@@ -340,7 +340,7 @@ func (r *Runner) rollback(ctx context.Context, request SetupRequest, completed [
 			break
 		}
 	}
-	if !hasRollback && len(completed) == 0 {
+	if !hasRollback {
 		return
 	}
 
@@ -810,7 +810,7 @@ func (r *Runner) buildInstallSteps(request SetupRequest, domain string, platform
 			},
 		},
 		{
-			Name: "Установка и настройка сервисов (Redis, Supervisor, Fail2Ban, UFW, Cron)",
+			Name: "Установка и настройка сервисов (Redis, Supervisor, Fail2Ban, UFW)",
 			Run: func(ctx context.Context, _ SetupRequest, runner *Runner) error {
 				return runner.runPTYCommand(ctx, servicesSetupCommand())
 			},
@@ -862,6 +862,12 @@ func (r *Runner) buildInstallSteps(request SetupRequest, domain string, platform
 					return fmt.Errorf("panel_release_url_missing: set NOVUS_INSTALLER_PANEL_RELEASE_URL or provide github_pat for private SGC-NOVUS/panel-core access")
 				}
 				return runner.runPTYCommand(ctx, panelDeploymentCommand(panelURL, req.GitHubPAT))
+			},
+		},
+		{
+			Name: "Настройка Cron-заданий панели",
+			Run: func(ctx context.Context, _ SetupRequest, runner *Runner) error {
+				return runner.runPTYCommand(ctx, cronSetupCommand())
 			},
 		},
 		{
@@ -1017,7 +1023,7 @@ func systemDependenciesCommand() string {
 		// Remove stale dpkg locks from aborted runs (safe fallback).
 		"rm -f /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock /var/cache/apt/archives/lock 2>/dev/null || true",
 		"apt-get update -qq 2>/dev/null || apt-get update -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true 2>/dev/null || true",
-		"DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common curl wget git unzip ufw || true",
+		"DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common curl wget git unzip rsync ufw || true",
 	}, " && ")
 }
 
@@ -1064,13 +1070,13 @@ func stackInstallCommand() string {
 			"php8.5-bcmath php8.5-intl php8.5-gd php8.5-redis php8.5-grpc " +
 			"redis-server supervisor fail2ban ufw " +
 			"certbot python3-certbot-nginx python3-certbot-dns-cloudflare " +
-			"curl wget git unzip jq openssl ca-certificates gnupg openssh-server " +
+			"curl wget git unzip rsync jq openssl ca-certificates gnupg openssh-server " +
 			"|| DEBIAN_FRONTEND=noninteractive apt-get install -y " +
 			"nginx mariadb-server php8.5-fpm php8.5-cli php8.5-mysql php8.5-mbstring php8.5-xml php8.5-curl php8.5-zip " +
 			"php8.5-bcmath php8.5-intl php8.5-gd php8.5-redis php8.5-grpc " +
 			"redis-server supervisor fail2ban ufw " +
 			"certbot python3-certbot-nginx python3-certbot-dns-cloudflare " +
-			"curl wget git unzip jq openssl ca-certificates gnupg openssh-server",
+			"curl wget git unzip rsync jq openssl ca-certificates gnupg openssh-server",
 		// Enable base services.
 		"systemctl enable nginx mariadb 2>/dev/null || true",
 		"systemctl enable php8.5-fpm 2>/dev/null || true",
@@ -1128,7 +1134,11 @@ func servicesSetupCommand() string {
 		"ufw allow 8080/tcp 2>/dev/null || true",
 		"ufw allow 9443/tcp 2>/dev/null || true",
 		"ufw --force enable 2>/dev/null || true",
-		// Cron jobs (from panel templates)
+	}, " && ")
+}
+
+func cronSetupCommand() string {
+	return strings.Join([]string{
 		"if [ -f /var/www/novus/deploy/templates/novus-panel.cron ]; then " +
 			"sed -e 's|{{PHP_BIN}}|/usr/bin/php8.5|g' -e 's|{{PANEL_DIR}}|/var/www/novus|g' -e 's|^\\* \\* \\* \\* \\* www |* * * * * www |' " +
 			"/var/www/novus/deploy/templates/novus-panel.cron > /etc/cron.d/novus-panel 2>/dev/null; " +
@@ -1243,7 +1253,7 @@ func panelDeploymentCommand(panelReleaseURL string, githubPAT string) string {
 		// GitHub zipball extracts into a subdirectory (repo-branch/). Move contents up.
 		"unzip -oq " + shellQuote(panelArchivePath) + " -d /tmp/novus_panel_extract",
 		"EXTRACT_DIR=$(ls -d /tmp/novus_panel_extract/*/ 2>/dev/null | head -1)",
-		"[ -n \"$EXTRACT_DIR\" ] && rsync -a \"$EXTRACT_DIR\" " + shellQuote(panelInstallRoot) + "/ || unzip -oq " + shellQuote(panelArchivePath) + " -d " + shellQuote(panelInstallRoot),
+		"[ -n \"$EXTRACT_DIR\" ] && (cd \"$EXTRACT_DIR\" && cp -a . " + shellQuote(panelInstallRoot) + "/) || unzip -oq " + shellQuote(panelArchivePath) + " -d " + shellQuote(panelInstallRoot),
 		"rm -rf /tmp/novus_panel_extract",
 		"chown -R www-data:www-data " + shellQuote(panelInstallRoot),
 	}, " && ")
@@ -1252,19 +1262,23 @@ func panelDeploymentCommand(panelReleaseURL string, githubPAT string) string {
 func panelBridgeCommand() string {
 	return strings.Join([]string{
 		"cd " + shellQuote(panelInstallRoot),
+		// Detect correct PHP binary (php8.5 or fallback to php).
+		"PHP_BIN=$(command -v php8.5 || command -v php || echo php)",
 		// Ensure composer is available.
 		"if ! command -v composer >/dev/null 2>&1; then " +
 			"echo '[installer] Installing composer...'; " +
-			"php -r \"copy('https://getcomposer.org/installer', 'composer-setup.php');\"; " +
-			"php composer-setup.php --install-dir=/usr/local/bin --filename=composer; " +
-			"php -r \"unlink('composer-setup.php');\"; " +
+			"($PHP_BIN -r \"copy('https://getcomposer.org/installer', 'composer-setup.php');\" 2>/dev/null || " +
+			"curl -fsSL https://getcomposer.org/installer -o composer-setup.php 2>/dev/null || " +
+			"wget -q https://getcomposer.org/installer -O composer-setup.php 2>/dev/null); " +
+			"$PHP_BIN composer-setup.php --install-dir=/usr/local/bin --filename=composer 2>/dev/null; " +
+			"$PHP_BIN -r \"@unlink('composer-setup.php');\"; " +
 			"fi",
 		"echo '[installer] Running composer install...'",
-		"composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader",
+		"sudo -u www-data /usr/local/bin/composer install --no-dev --prefer-dist --no-interaction --no-scripts --optimize-autoloader",
 		"echo '[installer] Running artisan migrate...'",
-		"sudo -u www-data php artisan migrate --force",
+		"sudo -u www-data $PHP_BIN artisan migrate --force",
 		"echo '[installer] Running setup-foundation...'",
-		"sudo -u www-data php artisan novus:setup-foundation",
+		"sudo -u www-data $PHP_BIN artisan novus:setup-foundation",
 	}, " && ")
 }
 
@@ -2203,26 +2217,6 @@ func escapeSQLLiteral(value string) string {
 	value = strings.ReplaceAll(value, `\`, `\\`)
 	value = strings.ReplaceAll(value, "'", "''")
 	return value
-}
-
-// sanitizePasswordForShell removes shell-problematic characters from
-// passwords that will be interpolated into command-line arguments.
-// This is a safety net — the real fix is to pass SQL via stdin (here-doc).
-func sanitizePasswordForShell(value string) string {
-	// Safe alphanumeric + basic punctuation
-	valid := strings.Builder{}
-	for _, r := range value {
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') ||
-			r == '.' || r == '-' || r == '_' || r == '!' || r == '#' || r == '%' ||
-			r == '&' || r == '+' || r == '/' || r == '=' || r == '?' || r == '@' || r == '^' {
-			valid.WriteRune(r)
-		}
-	}
-	out := valid.String()
-	if len(out) < 8 {
-		out = "NOVUS_pw_" + strings.Repeat("x", 8-len(out))
-	}
-	return out
 }
 
 func resolveInstallerMasterKey(req SetupRequest) (string, error) {

@@ -34,8 +34,12 @@ func TestMariaDBConfigurationCommandEscapes(t *testing.T) {
 	if !strings.Contains(cmd, "CREATE DATABASE IF NOT EXISTS") {
 		t.Error("should create databases")
 	}
-	if !strings.HasPrefix(cmd, "mysql -e ") {
-		t.Error("should invoke mysql -e")
+	// Implementation uses printf to write SQL to temp file, then pipes to mariadb/mysql.
+	if !strings.Contains(cmd, "novus_db_setup.sql") {
+		t.Error("should use temp SQL file approach")
+	}
+	if !strings.Contains(cmd, "mariadb <") && !strings.Contains(cmd, "mysql <") {
+		t.Error("should pipe SQL file to mariadb or mysql")
 	}
 }
 
@@ -82,11 +86,14 @@ func TestNginxAndSSLCommandModes(t *testing.T) {
 }
 
 func TestPanelCommands(t *testing.T) {
-	if !strings.Contains(panelDeploymentCommand("https://example.com/panel.zip"), "unzip") {
+	if !strings.Contains(panelDeploymentCommand("https://example.com/panel.zip", ""), "unzip") {
 		t.Error("deployment should unzip archive")
 	}
 	if !strings.Contains(panelBridgeCommand(), "artisan migrate --force") {
 		t.Error("bridge should run migrations")
+	}
+	if !strings.Contains(panelBridgeCommand(), "sudo -u www-data") {
+		t.Error("bridge should run composer/artisan as www-data")
 	}
 	if !strings.Contains(panelSetupStripCommand(), "SetupController.php") {
 		t.Error("strip should remove setup controller")
