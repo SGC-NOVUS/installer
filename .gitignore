@@ -1,0 +1,17 @@
+# Build outputs
+build/
+*.exe
+novus-installer-linux-*
+novus-installer-windows-*
+novus-installer-darwin-*
+novus-installer
+
+# Temporary scripts and logs
+*.php
+*.sh
+*.log
+!install.sh
+
+# Go workspace
+*.out
+*.test
