@@ -1278,10 +1278,12 @@ func panelBridgeCommand() string {
 		// The panel uses a custom artisan runner (not standard Laravel).
 		// Standard commands like "migrate" are intentionally absent — the panel
 		// initialises its own schema on first web request. We only run commands
-		// that the panel actually exposes.
+		// that the panel actually exposes, and treat failures as non-fatal
+		// (the web UI handles final setup).
 		"echo '[installer] Running panel post-install...'",
 		"if sudo -u www-data $PHP_BIN artisan novus:migrate-nodes --help >/dev/null 2>&1; then " +
-			"sudo -u www-data $PHP_BIN artisan novus:migrate-nodes --force --apply; " +
+			"sudo -u www-data $PHP_BIN artisan novus:migrate-nodes --force --apply || " +
+			"echo '[installer] WARNING: novus:migrate-nodes returned non-zero (non-critical).'; " +
 			"else " +
 			"echo '[installer] novus:migrate-nodes not available, skipping.'; " +
 			"fi",
