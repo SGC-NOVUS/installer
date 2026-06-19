@@ -130,6 +130,8 @@ type RunnerOptions struct {
 	AuditWriter io.Writer
 	// AuditDisabled turns the audit trail into a no-op.
 	AuditDisabled bool
+	// OnComplete is an optional callback invoked when the orchestrator finishes successfully.
+	OnComplete func()
 }
 
 type SecurityEntranceConfig struct {
@@ -213,6 +215,7 @@ type Runner struct {
 	devMode         bool
 	dryRun          bool
 	dryRunDelay     time.Duration
+	onComplete      func()
 	agentBinaryURL  string
 	panelReleaseURL string
 	audit           *InstallAuditLogger
@@ -238,6 +241,7 @@ func NewRunner(output OutputSink, options RunnerOptions) *Runner {
 		devMode:         options.DevMode,
 		dryRun:          options.DryRun,
 		dryRunDelay:     dryRunDelay,
+		onComplete:      options.OnComplete,
 		agentBinaryURL:  resolveAgentBinaryURL(),
 		panelReleaseURL: resolvePanelReleaseURL(),
 		audit:           NewInstallAuditLogger(auditWriter, auditEnabled),
@@ -339,6 +343,10 @@ func (r *Runner) run(ctx context.Context, request SetupRequest) {
 	r.writeLine("\r\n\x1b[32m[SUCCESS]\x1b[0m Installation steps completed successfully.\r\n")
 	log.Printf("novus-installer orchestrator finished successfully")
 	r.maybeSelfDestruct()
+
+	if r.onComplete != nil {
+		r.onComplete()
+	}
 }
 
 // rollback invokes the compensating action of every completed step that defines
@@ -957,15 +965,9 @@ func (r *Runner) buildInstallSteps(request SetupRequest, domain string, platform
 
 func (r *Runner) runPTYCommand(ctx context.Context, command string) error {
 	if r.dryRun {
-		r.writeLine(fmt.Sprintf("\x1b[33m[DRY-RUN] Would execute: %s\x1b[0m\r\n", command))
+		r.writeLine(fmt.Sprintf("\x1b[33m[DRY-RUN] Would execute command\x1b[0m\r\n"))
 		return sleepContext(ctx, r.dryRunDelay)
 	}
-
-	displayCmd := command
-	if len(displayCmd) > 150 {
-		displayCmd = displayCmd[:147] + "..."
-	}
-	r.writeLine(fmt.Sprintf("\x1b[33m$ %s\x1b[0m\r\n", displayCmd))
 
 	cmd := exec.CommandContext(ctx, "bash", "-lc", command)
 	cmd.Env = append(os.Environ(),

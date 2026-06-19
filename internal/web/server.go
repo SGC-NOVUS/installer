@@ -22,6 +22,7 @@ type Config struct {
 	DevMode     bool
 	DryRun      bool
 	DryRunDelay time.Duration
+	OnComplete  func()
 }
 
 type Server struct {
@@ -64,6 +65,7 @@ func New(cfg Config) (*Server, error) {
 		DevMode:     cfg.DevMode,
 		DryRun:      cfg.DryRun,
 		DryRunDelay: cfg.DryRunDelay,
+		OnComplete:  cfg.OnComplete,
 	})
 
 	mux := http.NewServeMux()

@@ -59,6 +59,12 @@ func main() {
 		BaseContext: ctx,
 		DevMode:     *devMode,
 		DryRun:      *dryRun,
+		OnComplete: func() {
+			go func() {
+				time.Sleep(3 * time.Second)
+				stop() // trigger shutdown
+			}()
+		},
 	})
 	if err != nil {
 		log.Fatalf("installer_web_init_failed: %v", err)
