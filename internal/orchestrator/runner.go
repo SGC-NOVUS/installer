@@ -1002,11 +1002,19 @@ func (r *Runner) runPTYCommand(ctx context.Context, command string) error {
 	if ignorePTYReadError(copyErr) {
 		copyErr = nil
 	}
+
+	truncate := func(s string) string {
+		if len(s) > 150 {
+			return s[:147] + "..."
+		}
+		return s
+	}
+
 	if waitErr != nil {
-		return fmt.Errorf("command_failed:%s: %w", command, waitErr)
+		return fmt.Errorf("command_failed:%s: %w", truncate(command), waitErr)
 	}
 	if copyErr != nil {
-		return fmt.Errorf("pty_stream_failed:%s: %w", command, copyErr)
+		return fmt.Errorf("pty_stream_failed:%s: %w", truncate(command), copyErr)
 	}
 
 	return nil

@@ -2525,6 +2525,14 @@
         line-height: 1.24;
       }
 
+      .error-message {
+        margin-top: 0.22rem;
+        font-size: 0.67rem;
+        line-height: 1.24;
+        word-break: break-all;
+        overflow-wrap: anywhere;
+      }
+
       .install-inner,
       .success-inner {
         padding: 3.2rem 1.2rem 0.95rem;
@@ -4698,22 +4706,20 @@
             };
 
             const downloadCredentials = () => {
-              const url = form.sslMode === 'none' ? 'http://' + form.domain : 'https://' + form.domain;
               const text = `NOVUS-OS Installation Credentials\n\n` +
-                           `Panel URL: ${url}\n` +
+                           `Panel URL: ${form.panelUrl}\n` +
                            `Admin Email: ${form.adminEmail}\n` +
                            `Admin Username: ${adminUsername.value}\n` +
                            `Admin Password: ${form.adminPassword}\n` +
                            `MariaDB Root Password: ${form.dbRootPassword}\n` +
                            `MariaDB Panel Password: ${form.dbPanelPassword}\n`;
-              const blob = new Blob([text], { type: 'text/plain' });
+              const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(text);
               const a = document.createElement('a');
-              a.href = URL.createObjectURL(blob);
+              a.href = dataStr;
               a.download = 'novus-credentials.txt';
               document.body.appendChild(a);
               a.click();
               document.body.removeChild(a);
-              URL.revokeObjectURL(a.href);
             };
 
             const advanceWizard = () => {
