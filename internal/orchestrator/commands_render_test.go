@@ -89,8 +89,8 @@ func TestPanelCommands(t *testing.T) {
 	if !strings.Contains(panelDeploymentCommand("https://example.com/panel.zip", ""), "unzip") {
 		t.Error("deployment should unzip archive")
 	}
-	if !strings.Contains(panelBridgeCommand(), "artisan migrate --force") {
-		t.Error("bridge should run migrations")
+	if !strings.Contains(panelBridgeCommand(), "novus:migrate-nodes") {
+		t.Error("bridge should reference novus:migrate-nodes")
 	}
 	if !strings.Contains(panelBridgeCommand(), "sudo -u www-data") {
 		t.Error("bridge should run composer/artisan as www-data")

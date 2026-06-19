@@ -1275,21 +1275,16 @@ func panelBridgeCommand() string {
 			"fi",
 		"echo '[installer] Running composer install...'",
 		"sudo -u www-data /usr/local/bin/composer install --no-dev --prefer-dist --no-interaction --no-scripts --optimize-autoloader",
-		// Temporarily disable incompatible grpc extension (ondrej PPA may
-		// ship grpc.so built against a different PHP ABI, causing:
-		// "undefined symbol: zend_exception_get_default" → artisan breaks).
-		// The extension is restored after artisan commands so php-fpm has it.
-		"echo '[installer] Preparing artisan environment...' && " +
-			"GRPC_INI=$(php8.5 --ini 2>/dev/null | grep -i 'grpc\\.ini' | sed 's/.*: *//; s/[, ].*//' | head -1 || true) && " +
-			"([ -z \"$GRPC_INI\" ] || [ ! -f \"$GRPC_INI\" ] || mv \"$GRPC_INI\" \"${GRPC_INI}.novus_bak\" 2>/dev/null || true) && " +
-			"(" +
-			"echo '[installer] Running artisan migrate...' && " +
-			"sudo -u www-data $PHP_BIN artisan migrate --force && " +
-			"echo '[installer] Running setup-foundation...' && " +
-			"sudo -u www-data $PHP_BIN artisan novus:setup-foundation" +
-			"); ARTISAN_EXIT=$?; " +
-			"([ -z \"$GRPC_INI\" ] || [ ! -f \"${GRPC_INI}.novus_bak\" ] || mv \"${GRPC_INI}.novus_bak\" \"$GRPC_INI\" 2>/dev/null || true) && " +
-			"[ \"$ARTISAN_EXIT\" = \"0\" ]",
+		// The panel uses a custom artisan runner (not standard Laravel).
+		// Standard commands like "migrate" are intentionally absent — the panel
+		// initialises its own schema on first web request. We only run commands
+		// that the panel actually exposes.
+		"echo '[installer] Running panel post-install...'",
+		"if sudo -u www-data $PHP_BIN artisan novus:migrate-nodes --help >/dev/null 2>&1; then " +
+			"sudo -u www-data $PHP_BIN artisan novus:migrate-nodes --force --apply; " +
+			"else " +
+			"echo '[installer] novus:migrate-nodes not available, skipping.'; " +
+			"fi",
 	}, " && ")
 }
 
