@@ -1105,9 +1105,10 @@ func stackInstallCommand() string {
 		"systemctl enable nginx mariadb 2>/dev/null || true",
 		"systemctl enable php8.5-fpm 2>/dev/null || true",
 		"systemctl start nginx mariadb 2>/dev/null || true",
+		"mkdir -p /etc/novus/secrets",
 		"systemctl start php8.5-fpm 2>/dev/null || true",
 		"mkdir -p /etc/systemd/system/php8.5-fpm.service.d 2>/dev/null || true",
-		"echo -e '[Service]\\nReadWritePaths=/etc/novus/secrets' > /etc/systemd/system/php8.5-fpm.service.d/override.conf || true",
+		"echo -e '[Service]\\nReadWritePaths=-/etc/novus/secrets' > /etc/systemd/system/php8.5-fpm.service.d/override.conf || true",
 		"systemctl daemon-reload 2>/dev/null || true",
 		"systemctl restart php8.5-fpm 2>/dev/null || true",
 	}, " && ")
