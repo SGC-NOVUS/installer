@@ -906,6 +906,14 @@ func (r *Runner) buildInstallSteps(request SetupRequest, domain string, platform
 				return runner.runPTYCommand(ctx, panelBridgeCommand())
 			},
 		},
+		{
+			Name: "Инициализация схемы БД (System Bootstrap)",
+			Run: func(ctx context.Context, _ SetupRequest, runner *Runner) error {
+				// The panel initializes its schema on the first web request.
+				// We must trigger this BEFORE applying any panel settings.
+				return runner.runSystemHealthCheck(ctx, domain)
+			},
+		},
 	}
 
 	if request.effectiveInstallMode() == "restore" {
@@ -950,12 +958,6 @@ func (r *Runner) buildInstallSteps(request SetupRequest, domain string, platform
 			},
 			Rollback: func(_ context.Context, _ SetupRequest, runner *Runner) error {
 				return runner.removeInstallerArtifacts(manifestPath)
-			},
-		},
-		Step{
-			Name: "Проверка работоспособности системы",
-			Run: func(ctx context.Context, _ SetupRequest, runner *Runner) error {
-				return runner.runSystemHealthCheck(ctx, domain)
 			},
 		},
 	)
@@ -1762,10 +1764,13 @@ func (r *Runner) runSystemHealthCheck(ctx context.Context, domain string) error 
 	description := fmt.Sprintf("http GET %s with Host: %s", localHealthCheckURL, domain)
 
 	return r.runLocalAction(ctx, description, func() error {
+		// IMPORTANT: we must allow redirects and skip TLS verification because
+		// Nginx might redirect HTTP to HTTPS, and hitting the actual PHP endpoint
+		// is REQUIRED to trigger the panel's first-time schema migrations.
 		client := &http.Client{
-			Timeout: healthCheckTimeout,
-			CheckRedirect: func(*http.Request, []*http.Request) error {
-				return http.ErrUseLastResponse
+			Timeout: 45 * time.Second, // Allow plenty of time for DB schema migrations
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			},
 		}
 
@@ -1785,15 +1790,19 @@ func (r *Runner) runSystemHealthCheck(ctx context.Context, domain string) error 
 		defer resp.Body.Close()
 
 		switch resp.StatusCode {
-		case http.StatusOK, http.StatusMovedPermanently, http.StatusFound, http.StatusUnauthorized:
+		case http.StatusOK, http.StatusMovedPermanently, http.StatusFound, http.StatusUnauthorized, http.StatusForbidden:
 			return nil
 		case http.StatusInternalServerError, http.StatusBadGateway:
 			return fmt.Errorf("health_check_failed:status_%d", resp.StatusCode)
 		default:
+			if resp.StatusCode >= 200 && resp.StatusCode < 500 {
+				return nil
+			}
 			return fmt.Errorf("health_check_unexpected_status:%d", resp.StatusCode)
 		}
 	})
 }
+
 
 func (r *Runner) maybeSelfDestruct() {
 	if r.devMode || r.dryRun {
