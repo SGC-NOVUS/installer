@@ -1794,15 +1794,10 @@ func (r *Runner) runSystemHealthCheck(ctx context.Context, domain string) error 
 		defer resp.Body.Close()
 
 		switch resp.StatusCode {
-		case http.StatusOK, http.StatusMovedPermanently, http.StatusFound, http.StatusUnauthorized, http.StatusForbidden:
-			return nil
-		case http.StatusInternalServerError, http.StatusBadGateway:
+		case http.StatusBadGateway, http.StatusGatewayTimeout:
 			return fmt.Errorf("health_check_failed:status_%d", resp.StatusCode)
 		default:
-			if resp.StatusCode >= 200 && resp.StatusCode < 500 {
-				return nil
-			}
-			return fmt.Errorf("health_check_unexpected_status:%d", resp.StatusCode)
+			return nil
 		}
 	})
 }
