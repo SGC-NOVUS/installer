@@ -1098,7 +1098,7 @@ func mariaDBConfigurationCommand(req SetupRequest) string {
 	safeRoot := escapeSQLLiteral(req.DBRootPassword)
 	safePanel := escapeSQLLiteral(req.DBPanelPassword)
 	sql := fmt.Sprintf(
-		"ALTER USER 'root'@'localhost' IDENTIFIED BY '%s'; CREATE DATABASE IF NOT EXISTS %s; CREATE DATABASE IF NOT EXISTS %s; CREATE DATABASE IF NOT EXISTS %s; CREATE USER IF NOT EXISTS '%s'@'localhost' IDENTIFIED BY '%s'; CREATE USER IF NOT EXISTS '%s'@'localhost' IDENTIFIED BY '%s'; GRANT ALL PRIVILEGES ON %s.* TO '%s'@'localhost'; GRANT ALL PRIVILEGES ON %s.* TO '%s'@'localhost'; GRANT ALL PRIVILEGES ON %s.* TO '%s'@'localhost'; FLUSH PRIVILEGES;",
+		"ALTER USER 'root'@'localhost' IDENTIFIED BY '%s'; CREATE DATABASE IF NOT EXISTS %s; CREATE DATABASE IF NOT EXISTS %s; CREATE DATABASE IF NOT EXISTS %s; CREATE USER IF NOT EXISTS '%s'@'127.0.0.1' IDENTIFIED BY '%s'; CREATE USER IF NOT EXISTS '%s'@'127.0.0.1' IDENTIFIED BY '%s'; GRANT ALL PRIVILEGES ON %s.* TO '%s'@'127.0.0.1'; GRANT ALL PRIVILEGES ON %s.* TO '%s'@'127.0.0.1'; GRANT ALL PRIVILEGES ON %s.* TO '%s'@'127.0.0.1'; FLUSH PRIVILEGES;",
 		safeRoot,
 		defaultOSDBName, defaultIDDBName, defaultSDDBName,
 		defaultSystemDBUser, safePanel,
@@ -1110,8 +1110,10 @@ func mariaDBConfigurationCommand(req SetupRequest) string {
 
 	// Use printf to write SQL to file — avoids all here-doc and pipe escaping issues.
 	return fmt.Sprintf(
-		`(printf %%s %s > /tmp/novus_db_setup.sql && (mariadb < /tmp/novus_db_setup.sql 2>/dev/null || mysql < /tmp/novus_db_setup.sql 2>/dev/null || true) && rm -f /tmp/novus_db_setup.sql)`,
+		`(printf %%s %s > /tmp/novus_db_setup.sql && (mariadb < /tmp/novus_db_setup.sql 2>/dev/null || mysql < /tmp/novus_db_setup.sql 2>/dev/null || mariadb -u root -p%s < /tmp/novus_db_setup.sql 2>/dev/null || mysql -u root -p%s < /tmp/novus_db_setup.sql 2>/dev/null || true) && rm -f /tmp/novus_db_setup.sql)`,
 		shellQuote(sql),
+		shellQuote(req.DBRootPassword),
+		shellQuote(req.DBRootPassword),
 	)
 }
 
