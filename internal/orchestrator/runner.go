@@ -972,6 +972,53 @@ try {
 		},
 	}
 
+	steps = append(steps, Step{
+		Name: "��������� ���������� ���� (Agent Node Bootstrap)",
+		Run: func(ctx context.Context, req SetupRequest, runner *Runner) error {
+			domain, _ := normalizeDomain(req.Domain)
+			scheme := "https://"
+			if req.SSLMode == "none" {
+				scheme = "http://"
+			}
+			fullUrl := scheme + domain
+			script := `<?php
+declare(strict_types=1);
+require '/var/www/novus/bootstrap/app.php';
+$conn = app(\App\Services\Database\ConnectionManager::class)->connection('os');
+$agentId = 'local-' . bin2hex(random_bytes(4));
+$secret = bin2hex(random_bytes(32));
+$stmt = $conn->prepare("INSERT INTO panel_nodes (node_uuid, node_agent_id, name, location, is_public, status, host, port, secret_key, connection_type, created_at, updated_at) VALUES (UUID(), ?, 'Local Node', 'Local', 0, 'active', '127.0.0.1', 9443, ?, 'direct', NOW(), NOW())");
+$stmt->execute([$agentId, $secret]);
+$domain = "` + fullUrl + `";
+$env = "NOVUS_AGENT_PANEL_URL=\"{$domain}\"\nNOVUS_AGENT_ID=\"{$agentId}\"\nNOVUS_AGENT_SHARED_SECRET=\"{$secret}\"\n";
+file_put_contents('/etc/novus/novus-agent.env', $env);
+`
+			err := runner.runPTYCommand(ctx, "cat << 'EOF' > /tmp/agent_setup.php\n"+script+"\nEOF\nphp /tmp/agent_setup.php && rm -f /tmp/agent_setup.php")
+			if err != nil {
+				return err
+			}
+			
+			// Create service and start
+			serviceScript := `[Unit]
+Description=NOVUS Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/novus/novus-agent.env
+ExecStart=/usr/local/bin/novus-agent daemon
+Restart=always
+RestartSec=3
+LimitNOFILE=1048576
+
+[Install]
+WantedBy=multi-user.target
+`
+			return runner.runPTYCommand(ctx, "cat << 'EOF' > /etc/systemd/system/novus-agent.service\n"+serviceScript+"\nEOF\nsystemctl daemon-reload && systemctl enable --now novus-agent")
+		},
+	})
+
 	if request.effectiveInstallMode() == "restore" {
 		steps = append(steps, Step{
 			Name: "Восстановление конфигурации панели",
