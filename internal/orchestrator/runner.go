@@ -913,6 +913,63 @@ func (r *Runner) buildInstallSteps(request SetupRequest, domain string, platform
 				return runner.runSystemHealthCheck(ctx, domain)
 			},
 		},
+		{
+			Name: "Настройка администратора (Identity Bootstrap)",
+			Run: func(ctx context.Context, req SetupRequest, runner *Runner) error {
+				script := `<?php
+declare(strict_types=1);
+chdir('/var/www/novus');
+require '/var/www/novus/bootstrap/app.php';
+try {
+    $container = app();
+    $users = $container->resolve(\App\Services\Identity\UsersService::class);
+    $email = $argv[1];
+    $password = $argv[2];
+    
+    // Attempt to create
+    $res = $users->create($email, 'Administrator', 'system_admin');
+    
+    // Get user ID
+    $db = $container->resolve(\App\Services\Database\ConnectionManager::class);
+    $conn = $db->connection('id');
+    $stmt = $conn->prepare('SELECT nid_id FROM users WHERE email = ? LIMIT 1');
+    $stmt->bind_param('s', $email);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    
+    if (!$row) {
+        $blindIndex = $container->resolve(\App\Services\Security\BlindIndexService::class);
+        $bindex = $blindIndex->index('email', strtolower(trim($email)), 'users');
+        $stmt = $conn->prepare('SELECT nid_id FROM users WHERE email_bindex = ? LIMIT 1');
+        $stmt->bind_param('s', $bindex);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+    }
+    
+    if (!$row) throw new \Exception('User not found');
+    $id = $row['nid_id'];
+    
+    // Set password
+    $res = $users->setPassword($id, $password);
+    if (!$res['ok']) throw new \Exception('Failed to set password: ' . ($res['error'] ?? 'unknown'));
+    
+    // Set active
+    $stmt = $conn->prepare("UPDATE users SET status = 'active' WHERE nid_id = ?");
+    $stmt->bind_param('s', $id);
+    $stmt->execute();
+    $stmt->close();
+    
+    echo "OK\n";
+} catch (\Throwable $e) {
+    echo "ERROR: " . $e->getMessage() . "\n";
+    exit(1);
+}
+`
+				return runner.runPTYCommand(ctx, fmt.Sprintf("cat << 'EOF' > /tmp/create_admin.php\n%s\nEOF\nsudo -u www-data php /tmp/create_admin.php %s %s\nrm -f /tmp/create_admin.php", script, shellQuote(req.AdminEmail), shellQuote(req.AdminPassword)))
+			},
+		},
 	}
 
 	if request.effectiveInstallMode() == "restore" {
