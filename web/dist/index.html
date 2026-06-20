@@ -3947,16 +3947,7 @@
             </button>
           </div>
 
-          <div style="position: fixed; top: 1.5rem; left: 50%; transform: translateX(-50%); z-index: 9999; background-color: #10b981; color: white; padding: 0.6rem 1rem 0.6rem 1.25rem; border-radius: 8px; display: flex; gap: 1rem; align-items: center; box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4), 0 8px 10px -6px rgba(16, 185, 129, 0.2); border: 1px solid rgba(255,255,255,0.2); max-width: 90vw; animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
-            <style>
-              @keyframes slideDown { from { transform: translate(-50%, -120%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
-            </style>
-            <span style="font-size: 0.95rem; font-weight: 500; display: flex; align-items: center; white-space: nowrap;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 1.2rem; height: 1.2rem; margin-right: 0.5rem; flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
-              Пароли сгенерированы! Сохраните их:
-            </span>
-            <button type="button" @click="downloadCredentials" style="background: white; color: #10b981; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">Скачать TXT</button>
-          </div>
+          <div style="position: fixed; top: 1.5rem; right: 1.5rem; z-index: 9999; background-color: #10b981; color: white; padding: 0.6rem 1rem 0.6rem 1.25rem; border-radius: 8px; display: flex; gap: 1rem; align-items: center; box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4), 0 8px 10px -6px rgba(16, 185, 129, 0.2); border: 1px solid rgba(255,255,255,0.2); animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);"><style>@keyframes slideInRight { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }</style><span style="font-size: 0.95rem; font-weight: 500; display: flex; align-items: center; white-space: nowrap;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 1.2rem; height: 1.2rem; margin-right: 0.5rem; flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>������ �������������! ��������� ��:</span><button type="button" @click="downloadCredentials" style="background: white; color: #10b981; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">������� TXT</button></div>
 
           <div class="install-inner">
             <div class="install-header">
@@ -4713,13 +4704,15 @@
                            `Admin Password: ${form.adminPassword}\n` +
                            `MariaDB Root Password: ${form.dbRootPassword}\n` +
                            `MariaDB Panel Password: ${form.dbPanelPassword}\n`;
-              const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(text);
+              const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+              const url = URL.createObjectURL(blob);
               const a = document.createElement('a');
-              a.href = dataStr;
+              a.href = url;
               a.download = 'novus-credentials.txt';
               document.body.appendChild(a);
               a.click();
               document.body.removeChild(a);
+              setTimeout(() => URL.revokeObjectURL(url), 100);
             };
 
             const advanceWizard = () => {
