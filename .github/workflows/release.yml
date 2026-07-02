@@ -1,0 +1,128 @@
+name: Publish Public Installer Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag (example: v1.0.0)"
+        required: true
+      source_ref:
+        description: "Source ref to build (branch, tag, or SHA)"
+        required: false
+        default: main
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+env:
+  PUBLIC_RELEASE_REPO: SGC-NOVUS/panel
+
+jobs:
+  publish:
+    name: Build and publish installer binaries
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve release metadata
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            tag="${{ github.event.inputs.release_tag }}"
+            ref="${{ github.event.inputs.source_ref }}"
+          else
+            tag="${GITHUB_REF_NAME}"
+            ref="${GITHUB_REF}"
+          fi
+
+          if [[ -z "$ref" ]]; then
+            ref="main"
+          fi
+
+          if [[ ! "$tag" =~ ^v[0-9A-Za-z._-]+$ ]]; then
+            echo "::error::release_tag_invalid: $tag"
+            exit 1
+          fi
+
+          echo "release_tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "source_ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.meta.outputs.source_ref }}
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build Linux binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          VERSION="${{ steps.meta.outputs.release_tag }}"
+          VERSION="${VERSION#v}"
+          for arch in amd64 arm64; do
+            CGO_ENABLED=0 GOOS=linux GOARCH="$arch" \
+              go build -trimpath \
+              -ldflags="-s -w" \
+              -o "dist/novus-installer-linux-${arch}" ./cmd/installer
+          done
+          echo "Built binaries:"
+          ls -lh dist/
+
+      - name: Generate checksums
+        shell: bash
+        run: |
+          cd dist
+          sha256sum novus-installer-linux-* > checksums.txt
+          cat checksums.txt
+
+      - name: Upload binaries as workflow artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: novus-installer-binaries
+          path: dist/
+          retention-days: 7
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.release_tag }}
+          name: "NOVUS Installer ${{ steps.meta.outputs.release_tag }}"
+          body: |
+            ## NOVUS Installer ${{ steps.meta.outputs.release_tag }}
+
+            Автоматический установщик NOVUS-OS на чистый VPS.
+
+            ### Системные требования
+            - Ubuntu 22.04/24.04 или Debian 12
+            - Минимум 2 GiB RAM, 20 GB SSD
+            - Root-доступ
+
+            ### Быстрый старт
+            ```bash
+            curl -fL "https://github.com/SGC-NOVUS/panel/releases/download/${{ steps.meta.outputs.release_tag }}/novus-installer-linux-amd64" -o novus-installer
+            chmod +x novus-installer
+            sudo ./novus-installer
+            ```
+
+            ### Контрольные суммы
+            См. `checksums.txt` во вложениях.
+          files: |
+            dist/novus-installer-linux-amd64
+            dist/novus-installer-linux-arm64
+            dist/checksums.txt
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

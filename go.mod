@@ -1,6 +1,6 @@
 module github.com/sgc-novus/novus-installer
 
-go 1.22
+go 1.24
 
 require (
 	github.com/creack/pty v1.1.21

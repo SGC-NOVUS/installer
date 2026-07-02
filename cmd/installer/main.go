@@ -28,7 +28,13 @@ const (
 func main() {
 	devMode := flag.Bool("dev", false, "run installer with relaxed preflight checks")
 	dryRun := flag.Bool("dry-run", false, "simulate installer commands without mutating the host")
+	showVersion := flag.Bool("version", false, "print installer version and exit")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println("novus-installer 1.0.0")
+		return
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()

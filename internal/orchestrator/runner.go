@@ -72,6 +72,17 @@ const (
 	healthCheckTimeout     = 5 * time.Second
 	minPanelArchiveBytes   = int64(10 * 1024)
 	minAgentBinaryBytes    = int64(1024)
+
+	// defaultPTYStepTimeout is the maximum wall-clock time a single install
+	// step may spend in its PTY command before the context is cancelled.
+	// Long-running steps (package install, panel download) should use this
+	// generous default; individual steps can tighten it if needed.
+	defaultPTYStepTimeout = 15 * time.Minute
+
+	// defaultPHPVersion is the single source of truth for the PHP major.minor
+	// version installed by the orchestrator. Change this one constant to
+	// upgrade PHP across all commands, package lists, and purge steps.
+	defaultPHPVersion = "8.5"
 )
 
 var ErrAlreadyRunning = errors.New("install_already_running")
@@ -312,7 +323,9 @@ func (r *Runner) run(ctx context.Context, request SetupRequest) {
 		r.audit.Log(InstallAuditEvent{Event: "step_start", Step: step.Name, Index: index + 1, Total: len(steps)})
 
 		started := time.Now()
-		if err := step.Run(ctx, request, r); err != nil {
+		stepCtx, stepCancel := context.WithTimeout(ctx, defaultPTYStepTimeout)
+		if err := step.Run(stepCtx, request, r); err != nil {
+			stepCancel()
 			r.audit.Log(InstallAuditEvent{Event: "step_failed", Step: step.Name, Index: index + 1, Total: len(steps), Outcome: "error", Reason: err.Error(), DurationMs: time.Since(started).Milliseconds()})
 			r.emitStatus(StatusMessage{Type: "error", Text: fmt.Sprintf("%s: %s", step.Name, err.Error())})
 			r.writeLine(fmt.Sprintf("\x1b[31m[FAILED]\x1b[0m %s\r\n", err.Error()))
@@ -321,7 +334,9 @@ func (r *Runner) run(ctx context.Context, request SetupRequest) {
 			r.audit.Log(InstallAuditEvent{Event: "install_aborted", Step: step.Name, Index: index + 1, Total: len(steps), Reason: err.Error()})
 			return
 		}
+		stepCancel()
 		if err := ctx.Err(); err != nil {
+			r.audit.Log(InstallAuditEvent{Event: "step_canceled", Step: step.Name, Index: index + 1, Total: len(steps), Outcome: "canceled", Reason: err.Error(), DurationMs: time.Since(started).Milliseconds()})
 			r.audit.Log(InstallAuditEvent{Event: "step_canceled", Step: step.Name, Index: index + 1, Total: len(steps), Outcome: "canceled", Reason: err.Error(), DurationMs: time.Since(started).Milliseconds()})
 			r.emitStatus(StatusMessage{Type: "error", Text: fmt.Sprintf("%s: %v", step.Name, err)})
 			r.writeLine(fmt.Sprintf("\x1b[31m[FAILED]\x1b[0m orchestration canceled: %v\r\n", err))
@@ -383,28 +398,38 @@ func (r *Runner) rollback(ctx context.Context, request SetupRequest, completed [
 		r.writeLine(fmt.Sprintf("\x1b[33m[ROLLBACK]\x1b[0m %s\r\n", step.Name))
 	}
 
-	// 2. Full cleanup: remove ALL installer artifacts unconditionally.
-	r.writeLine("\x1b[33m[ROLLBACK]\x1b[0m Полная очистка артефактов установки...\r\n")
-	if err := r.fullCleanup(ctx, request); err != nil {
+	// 2. Soft cleanup: remove installer artifacts (configs, temp files, DBs)
+	// but do NOT purge system packages — they may be needed by other services.
+	r.writeLine("\x1b[33m[ROLLBACK]\x1b[0m Soft cleanup — removing installer artifacts...\r\n")
+	if err := r.softCleanup(ctx, request); err != nil {
 		r.writeLine(fmt.Sprintf("\x1b[31m[CLEANUP FAILED]\x1b[0m %s\r\n", err.Error()))
-		log.Printf("novus-installer full cleanup failed: %v", err)
 	} else {
-		r.writeLine("\x1b[33m[ROLLBACK]\x1b[0m Все артефакты удалены.\r\n")
+		r.writeLine("\x1b[33m[ROLLBACK]\x1b[0m Installer artifacts removed.\r\n")
+	}
+
+	// 3. Hard cleanup: only in dev mode — purge apt packages too.
+	if r.devMode {
+		r.writeLine("\x1b[33m[ROLLBACK]\x1b[0m Dev mode: hard cleanup — purging system packages...\r\n")
+		if err := r.hardCleanup(ctx, request); err != nil {
+			r.writeLine(fmt.Sprintf("\x1b[31m[HARD CLEANUP FAILED]\x1b[0m %s\r\n", err.Error()))
+		} else {
+			r.writeLine("\x1b[33m[ROLLBACK]\x1b[0m System packages purged.\r\n")
+		}
 	}
 
 	r.audit.Log(InstallAuditEvent{Event: "rollback_complete"})
 }
 
-// fullCleanup removes all installer-created artifacts: panel root, DB data,
-// secrets, nginx configs, binary, manifest, etc. Runs on install failure.
-func (r *Runner) fullCleanup(ctx context.Context, req SetupRequest) error {
+// softCleanup removes installer-created files and databases but preserves
+// system packages (nginx, mariadb, php, etc.). Safe for production use.
+func (r *Runner) softCleanup(ctx context.Context, req SetupRequest) error {
 	if r.dryRun {
 		r.writeLine("[DRY-RUN] Would remove all NOVUS-OS artifacts.\r\n")
 		return nil
 	}
 
 	// Stop services first.
-	for _, svc := range []string{"novus-agent", "php8.5-fpm", "php-fpm", "nginx"} {
+	for _, svc := range []string{"novus-agent", phpPkg("fpm"), "php-fpm", "nginx"} {
 		_ = r.runPTYCommand(ctx, "systemctl stop "+svc+" 2>/dev/null || true")
 	}
 
@@ -420,7 +445,7 @@ func (r *Runner) fullCleanup(ctx context.Context, req SetupRequest) error {
 		agentDownloadPath, // /tmp/novus-agent
 	} {
 		if err := os.RemoveAll(path); err != nil && !errors.Is(err, os.ErrNotExist) {
-			log.Printf("fullCleanup: remove %s: %v", path, err)
+			log.Printf("softCleanup: remove %s: %v", path, err)
 		}
 	}
 
@@ -432,21 +457,29 @@ func (r *Runner) fullCleanup(ctx context.Context, req SetupRequest) error {
 	)
 	_ = r.runPTYCommand(ctx, "(mariadb -u root -p"+shellQuote(req.DBRootPassword)+" -e "+shellQuote(dropSQL)+" 2>/dev/null || mysql -u root -p"+shellQuote(req.DBRootPassword)+" -e "+shellQuote(dropSQL)+" 2>/dev/null || true)")
 
-	// Purge apt packages
-	_ = r.runPTYCommand(ctx, "DEBIAN_FRONTEND=noninteractive apt-get purge -y nginx mariadb-server php8.5-fpm php8.5-cli php8.5-mysql php8.5-mbstring php8.5-xml php8.5-curl php8.5-zip php8.5-bcmath php8.5-intl php8.5-gd php8.5-redis php8.5-grpc redis-server supervisor fail2ban certbot python3-certbot-nginx python3-certbot-dns-cloudflare 2>/dev/null || true")
-	_ = r.runPTYCommand(ctx, "DEBIAN_FRONTEND=noninteractive apt-get autoremove -y 2>/dev/null || true")
-
-	// Remove binary.
+	// Remove binary and systemd units.
 	_ = os.Remove("/usr/local/bin/novus-agent")
 	_ = os.Remove("/usr/local/bin/novus-installer")
 	_ = os.Remove("/usr/local/bin/sgc-agent")
-
-	// Reload systemd.
 	_ = os.Remove("/etc/systemd/system/novus-agent.service")
 	_ = os.Remove("/etc/systemd/system/sgc-agent.service")
-	_ = os.RemoveAll("/etc/systemd/system/php8.5-fpm.service.d")
-	_ = r.runPTYCommand(ctx, "systemctl reset-failed php8.5-fpm 2>/dev/null || true")
+	_ = os.RemoveAll("/etc/systemd/system/" + phpPkg("fpm") + ".service.d")
+	_ = r.runPTYCommand(ctx, "systemctl reset-failed "+phpPkg("fpm")+" 2>/dev/null || true")
 	_ = r.runPTYCommand(ctx, "systemctl daemon-reload 2>/dev/null || true")
+
+	return nil
+}
+
+// hardCleanup purges system packages installed by the installer.
+// ONLY called in dev mode — never in production.
+func (r *Runner) hardCleanup(ctx context.Context, _ SetupRequest) error {
+	if r.dryRun {
+		r.writeLine("[DRY-RUN] Would purge system packages (hard).\r\n")
+		return nil
+	}
+
+	_ = r.runPTYCommand(ctx, "DEBIAN_FRONTEND=noninteractive apt-get purge -y nginx mariadb-server "+phpPkg("fpm")+" "+phpPkg("cli")+" "+phpPkg("mysql")+" "+phpPkg("mbstring")+" "+phpPkg("xml")+" "+phpPkg("curl")+" "+phpPkg("zip")+" "+phpPkg("bcmath")+" "+phpPkg("intl")+" "+phpPkg("gd")+" "+phpPkg("redis")+" "+phpPkg("grpc")+" redis-server supervisor fail2ban certbot python3-certbot-nginx python3-certbot-dns-cloudflare 2>/dev/null || true")
+	_ = r.runPTYCommand(ctx, "DEBIAN_FRONTEND=noninteractive apt-get autoremove -y 2>/dev/null || true")
 
 	return nil
 }
@@ -768,36 +801,31 @@ func (req SetupRequest) hasPanelRuntimeConfiguration() bool {
 	return req.SecurityEntrance.Enabled || len(req.normalizedIntegrations()) > 0
 }
 
-func validateSecurityEntranceConfig(cfg SecurityEntranceConfig) error {
-	path := strings.Trim(strings.ToLower(cfg.Path), " /")
-	if path == "" {
-		return fmt.Errorf("setup_request_invalid:security_entrance_path_required")
-	}
-	if _, reserved := securityEntranceReservedSegments[path]; reserved {
-		return fmt.Errorf("setup_request_invalid:security_entrance_path_reserved")
-	}
-	if len(path) < 3 || len(path) > 64 {
-		return fmt.Errorf("setup_request_invalid:security_entrance_path_invalid")
-	}
-	for _, symbol := range path {
-		if (symbol < 'a' || symbol > 'z') && (symbol < '0' || symbol > '9') && symbol != '-' && symbol != '_' {
-			return fmt.Errorf("setup_request_invalid:security_entrance_path_invalid")
-		}
-	}
-	if cfg.Port < 0 || cfg.Port > 65535 {
-		return fmt.Errorf("setup_request_invalid:security_entrance_port_invalid")
-	}
-	if cfg.WindowSeconds < 0 || cfg.WindowSeconds > 86400 {
-		return fmt.Errorf("setup_request_invalid:security_entrance_window_invalid")
-	}
-	if cfg.MaxAttempts < 0 || cfg.MaxAttempts > 1000 {
-		return fmt.Errorf("setup_request_invalid:security_entrance_attempts_invalid")
-	}
-	if cfg.BlockSeconds < 0 || cfg.BlockSeconds > 604800 {
-		return fmt.Errorf("setup_request_invalid:security_entrance_block_invalid")
+// [Extracted to steps_system.go: detectPlatformProfile, resolveAgentBinaryURL, resolvePanelReleaseURL]
+// [Extracted to validators.go: validateSecurityEntranceConfig]
+
+func normalizeDomain(raw string) (string, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "", fmt.Errorf("domain_required")
 	}
 
-	return nil
+	parseTarget := trimmed
+	if !strings.Contains(parseTarget, "://") {
+		parseTarget = "https://" + parseTarget
+	}
+
+	parsed, err := url.Parse(parseTarget)
+	if err != nil {
+		return "", fmt.Errorf("domain_invalid:%w", err)
+	}
+
+	host := strings.TrimSpace(parsed.Hostname())
+	if host == "" {
+		return "", fmt.Errorf("domain_invalid:host_missing")
+	}
+
+	return host, nil
 }
 
 func (r *Runner) buildInstallSteps(request SetupRequest, domain string, platform platformProfile) []Step {
@@ -916,15 +944,22 @@ func (r *Runner) buildInstallSteps(request SetupRequest, domain string, platform
 		{
 			Name: "Настройка администратора (Identity Bootstrap)",
 			Run: func(ctx context.Context, req SetupRequest, runner *Runner) error {
+				// Security: write credentials to a tmpfile (not shell arguments)
+				// to prevent credential exposure via /proc or process listings.
 				script := `<?php
 declare(strict_types=1);
 chdir('/var/www/novus');
 require '/var/www/novus/bootstrap/app.php';
 try {
+    $creds = json_decode(file_get_contents('/tmp/novus_admin_creds.json'), true);
+    if (!$creds || empty($creds['email']) || empty($creds['password'])) {
+        throw new \Exception('Missing credentials');
+    }
+    $email = $creds['email'];
+    $password = $creds['password'];
+    
     $container = app();
     $users = $container->resolve(\App\Services\Identity\UsersService::class);
-    $email = $argv[1];
-    $password = $argv[2];
     
     // Attempt to create
     $res = $users->create($email, 'Administrator', 'system_admin');
@@ -965,15 +1000,33 @@ try {
 } catch (\Throwable $e) {
     echo "ERROR: " . $e->getMessage() . "\n";
     exit(1);
+} finally {
+    @unlink('/tmp/novus_admin_creds.json');
 }
 `
-				return runner.runPTYCommand(ctx, fmt.Sprintf("cat << 'EOF' > /tmp/create_admin.php\n%s\nEOF\nsudo -u www-data php /tmp/create_admin.php %s %s\nrm -f /tmp/create_admin.php", script, shellQuote(req.AdminEmail), shellQuote(req.AdminPassword)))
-			},
-		},
+								credsJSON, err := json.Marshal(map[string]string{
+									"email":    req.AdminEmail,
+									"password": req.AdminPassword,
+								})
+								if err != nil {
+									return fmt.Errorf("admin_creds_json_encode:%w", err)
+								}
+
+								return runner.runPTYCommand(ctx,
+									fmt.Sprintf(
+										"cat << 'NOVUSEOF' > /tmp/novus_admin_setup.php\n%s\nNOVUSEOF\n"+
+											"printf %%s %s > /tmp/novus_admin_creds.json && "+
+											"sudo -u www-data php /tmp/novus_admin_setup.php && "+
+											"rm -f /tmp/novus_admin_setup.php",
+										script,
+										shellQuote(string(credsJSON)),
+									))
+							},
+						},
 	}
 
 	steps = append(steps, Step{
-		Name: "��������� ���������� ���� (Agent Node Bootstrap)",
+		Name: "Настройка локального узла (Agent Node Bootstrap)",
 		Run: func(ctx context.Context, req SetupRequest, runner *Runner) error {
 			domain, _ := normalizeDomain(req.Domain)
 			scheme := "https://"
@@ -1151,145 +1204,11 @@ func (r *Runner) writeLine(line string) {
 	_, _ = io.WriteString(r.output, line)
 }
 
-func systemDependenciesCommand() string {
-	return strings.Join([]string{
-		// Fix any previously-interrupted dpkg state.
-		"dpkg --configure -a 2>/dev/null || true",
-		// Remove stale dpkg locks from aborted runs (safe fallback).
-		"rm -f /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock /var/cache/apt/archives/lock 2>/dev/null || true",
-		"apt-get update -qq 2>/dev/null || apt-get update -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true 2>/dev/null || true",
-		"DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common curl wget git unzip rsync ufw || true",
-	}, " && ")
-}
+// [Extracted to steps_system.go]
 
-func repositoriesCommand(platform platformProfile) string {
-	// Official repos for all key components — OS-version independent.
-	// Each repo setup is non-fatal (|| true) so the installer never blocks.
-	addPHPRepo := "LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php 2>/dev/null || true"
-	addMariaDBRepo := "curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash 2>/dev/null || true"
-	addRedisRepo := "rm -f /usr/share/keyrings/redis-archive-keyring.gpg 2>/dev/null; curl -fsSL https://packages.redis.io/gpg | gpg --dearmor --yes -o /usr/share/keyrings/redis-archive-keyring.gpg 2>/dev/null; echo \"deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(. /etc/os-release 2>/dev/null && echo ${VERSION_CODENAME:-noble}) main\" > /etc/apt/sources.list.d/redis.list 2>/dev/null || true"
-
-	if platform.ID == "debian" {
-		return strings.Join([]string{
-			"apt-get install -y ca-certificates apt-transport-https gnupg2",
-			// PHP from sury.org (Debian)
-			"(curl -fsSL https://packages.sury.org/php/apt.gpg -o /usr/share/keyrings/sury-php.gpg 2>/dev/null || true)",
-			"(. /etc/os-release 2>/dev/null; echo \"deb [signed-by=/usr/share/keyrings/sury-php.gpg] https://packages.sury.org/php/ ${VERSION_CODENAME:-bookworm} main\" > /etc/apt/sources.list.d/sury-php.list 2>/dev/null || true)",
-			"(" + addMariaDBRepo + " 2>/dev/null || true)",
-			"(" + addRedisRepo + " 2>/dev/null || true)",
-			"apt-get update -qq 2>/dev/null || apt-get update -o Acquire::AllowInsecureRepositories=true || true",
-		}, " && ")
-	}
-
-	return strings.Join([]string{
-		// Clean any previously-broken repo files.
-		"rm -f /etc/apt/sources.list.d/ondrej*.list /etc/apt/sources.list.d/ondrej*.sources /etc/apt/sources.list.d/mariadb*.list /etc/apt/sources.list.d/redis.list 2>/dev/null",
-		// PHP 8.5 (ondrej PPA — covers all Ubuntu LTS)
-		"(" + addPHPRepo + ")",
-		// MariaDB (official repo — covers all distros)
-		"(" + addMariaDBRepo + ")",
-		// Redis (official repo — covers all distros)
-		"(" + addRedisRepo + ")",
-		// Refresh package lists
-		"apt-get update -qq 2>/dev/null || apt-get update -o Acquire::AllowInsecureRepositories=true || true",
-	}, " && ")
-}
-
-func stackInstallCommand() string {
-	return strings.Join([]string{
-		"apt-get update",
-		// Full stack: Nginx + MariaDB + PHP 8.5 + all extensions + Redis + tools + security.
-		"DEBIAN_FRONTEND=noninteractive apt-get install -y " +
-			"nginx mariadb-server " +
-			"php8.5-fpm php8.5-cli php8.5-mysql php8.5-mbstring php8.5-xml php8.5-curl php8.5-zip " +
-			"php8.5-bcmath php8.5-intl php8.5-gd php8.5-redis php8.5-grpc " +
-			"redis-server supervisor fail2ban ufw " +
-			"certbot python3-certbot-nginx python3-certbot-dns-cloudflare " +
-			"curl wget git unzip rsync jq openssl ca-certificates gnupg openssh-server " +
-			"|| DEBIAN_FRONTEND=noninteractive apt-get install -y " +
-			"nginx mariadb-server php8.5-fpm php8.5-cli php8.5-mysql php8.5-mbstring php8.5-xml php8.5-curl php8.5-zip " +
-			"php8.5-bcmath php8.5-intl php8.5-gd php8.5-redis php8.5-grpc " +
-			"redis-server supervisor fail2ban ufw " +
-			"certbot python3-certbot-nginx python3-certbot-dns-cloudflare " +
-			"curl wget git unzip rsync jq openssl ca-certificates gnupg openssh-server",
-		// Enable base services.
-		"systemctl enable nginx mariadb 2>/dev/null || true",
-		"systemctl enable php8.5-fpm 2>/dev/null || true",
-		"systemctl start nginx mariadb 2>/dev/null || true",
-		"mkdir -p /etc/novus/secrets",
-		"systemctl start php8.5-fpm 2>/dev/null || true",
-		"mkdir -p /etc/systemd/system/php8.5-fpm.service.d 2>/dev/null || true",
-		"echo -e '[Service]\\nReadWritePaths=-/etc/novus/secrets' > /etc/systemd/system/php8.5-fpm.service.d/override.conf || true",
-		"systemctl daemon-reload 2>/dev/null || true",
-		"systemctl reset-failed php8.5-fpm 2>/dev/null || true",
-		"systemctl restart php8.5-fpm 2>/dev/null || true",
-	}, " && ")
-}
-
-func mariaDBConfigurationCommand(req SetupRequest) string {
-	// Write SQL to temp file using printf (no here-doc escaping issues).
-	safeRoot := escapeSQLLiteral(req.DBRootPassword)
-	safePanel := escapeSQLLiteral(req.DBPanelPassword)
-	sql := fmt.Sprintf(
-		"ALTER USER 'root'@'localhost' IDENTIFIED BY '%s'; CREATE DATABASE IF NOT EXISTS %s; CREATE DATABASE IF NOT EXISTS %s; CREATE DATABASE IF NOT EXISTS %s; CREATE USER IF NOT EXISTS '%s'@'127.0.0.1' IDENTIFIED BY '%s'; CREATE USER IF NOT EXISTS '%s'@'127.0.0.1' IDENTIFIED BY '%s'; GRANT ALL PRIVILEGES ON %s.* TO '%s'@'127.0.0.1'; GRANT ALL PRIVILEGES ON %s.* TO '%s'@'127.0.0.1'; GRANT ALL PRIVILEGES ON %s.* TO '%s'@'127.0.0.1'; FLUSH PRIVILEGES;",
-		safeRoot,
-		defaultOSDBName, defaultIDDBName, defaultSDDBName,
-		defaultSystemDBUser, safePanel,
-		defaultIdentityDBUser, safePanel,
-		defaultOSDBName, defaultSystemDBUser,
-		defaultIDDBName, defaultIdentityDBUser,
-		defaultSDDBName, defaultSystemDBUser,
-	)
-
-	// Use printf to write SQL to file — avoids all here-doc and pipe escaping issues.
-	return fmt.Sprintf(
-		`(printf %%s %s > /tmp/novus_db_setup.sql && (mariadb < /tmp/novus_db_setup.sql 2>/dev/null || mysql < /tmp/novus_db_setup.sql 2>/dev/null || mariadb -u root -p%s < /tmp/novus_db_setup.sql 2>/dev/null || mysql -u root -p%s < /tmp/novus_db_setup.sql 2>/dev/null || true) && rm -f /tmp/novus_db_setup.sql)`,
-		shellQuote(sql),
-		shellQuote(req.DBRootPassword),
-		shellQuote(req.DBRootPassword),
-	)
-}
-
-func agentInstallCommand(agentBinaryURL string) string {
-	return strings.Join([]string{
-		"curl -fL --retry 3 --connect-timeout 15 " + shellQuote(agentBinaryURL) + " -o " + shellQuote(agentDownloadPath),
-		"[ -s " + shellQuote(agentDownloadPath) + " ]",
-		"test \"$(stat -c%s " + shellQuote(agentDownloadPath) + ")\" -ge " + strconv.FormatInt(minAgentBinaryBytes, 10),
-		"install -m 0755 " + shellQuote(agentDownloadPath) + " /usr/local/bin/novus-agent",
-	}, " && ")
-}
-
-func servicesSetupCommand() string {
-	return strings.Join([]string{
-		// Redis
-		"systemctl enable --now redis-server 2>/dev/null || true",
-		// Supervisor
-		"systemctl enable --now supervisor 2>/dev/null || true",
-		// Fail2Ban
-		"systemctl enable --now fail2ban 2>/dev/null || true",
-		// UFW — default deny incoming, allow essential ports
-		"ufw --force disable 2>/dev/null || true",
-		"ufw default deny incoming 2>/dev/null || true",
-		"ufw default allow outgoing 2>/dev/null || true",
-		"ufw allow 22/tcp 2>/dev/null || true",
-		"ufw allow 80/tcp 2>/dev/null || true",
-		"ufw allow 443/tcp 2>/dev/null || true",
-		"ufw allow 8080/tcp 2>/dev/null || true",
-		"ufw allow 9443/tcp 2>/dev/null || true",
-		"ufw --force enable 2>/dev/null || true",
-	}, " && ")
-}
-
-func cronSetupCommand() string {
-	return strings.Join([]string{
-		"if [ -f /var/www/novus/deploy/templates/novus-panel.cron ]; then " +
-			"sed -e 's|{{PHP_BIN}}|/usr/bin/php8.5|g' -e 's|{{PANEL_DIR}}|/var/www/novus|g' -e 's|^\\* \\* \\* \\* \\* www |* * * * * www |' " +
-			"/var/www/novus/deploy/templates/novus-panel.cron > /etc/cron.d/novus-panel 2>/dev/null; " +
-			"chmod 644 /etc/cron.d/novus-panel 2>/dev/null; " +
-			"systemctl reload cron 2>/dev/null || systemctl reload crond 2>/dev/null || true; " +
-			"fi",
-	}, " && ")
-}
+// [Extracted to steps_system.go: stackInstallCommand, mariaDBConfigurationCommand,
+// agentInstallCommand, servicesSetupCommand, cronSetupCommand, detectPlatformProfile,
+// resolveAgentBinaryURL, resolvePanelReleaseURL]
 
 func nginxAndSSLCommand(req SetupRequest, domain string, email string) string {
 	commands := []string{
@@ -1405,8 +1324,8 @@ func panelDeploymentCommand(panelReleaseURL string, githubPAT string) string {
 func panelBridgeCommand() string {
 	return strings.Join([]string{
 		"cd " + shellQuote(panelInstallRoot),
-		// Detect correct PHP binary (php8.5 or fallback to php).
-		"PHP_BIN=$(command -v php8.5 || command -v php || echo php)",
+		// Detect correct PHP binary (prefer our installed version, fallback to php).
+		"PHP_BIN=$(command -v "+phpBin()+" || command -v php || echo php)",
 		// Ensure composer is available.
 		"if ! command -v composer >/dev/null 2>&1; then " +
 			"echo '[installer] Installing composer...'; " +
@@ -1858,7 +1777,7 @@ func (r *Runner) runPanelBootstrapJSONTask(ctx context.Context, description stri
 		}
 
 		phpBin := "php"
-		if path, err := exec.LookPath("php8.5"); err == nil {
+		if path, err := exec.LookPath(phpBin()); err == nil {
 			phpBin = path
 		} else if path, err := exec.LookPath("php"); err == nil {
 			phpBin = path
@@ -2059,81 +1978,7 @@ func customPrivateKeyPath(domain string) string {
 	return sslAssetDir + "/" + strings.TrimSpace(domain) + ".key"
 }
 
-func resolveAgentBinaryURL() string {
-	if value := strings.TrimSpace(os.Getenv(agentBinaryURLEnv)); value != "" {
-		return value
-	}
-
-	switch runtime.GOARCH {
-	case "arm64":
-		return defaultAgentARM64URL
-	default:
-		return defaultAgentAMD64URL
-	}
-}
-
-func resolvePanelReleaseURL() string {
-	// Explicit override always wins (e.g. custom hosting, local file:// or pre-signed URL).
-	if value := strings.TrimSpace(os.Getenv(panelReleaseURLEnv)); value != "" {
-		return value
-	}
-
-	// No default public URL — SGC-NOVUS/panel has NO releases.
-	// Build a private GitHub archive download URL using PAT if available.
-	pat := strings.TrimSpace(os.Getenv(panelGithubPATEnv))
-	if pat != "" {
-		// GitHub API: GET /repos/{owner}/{repo}/zipball/{ref}
-		// ref defaults to main; set via NOVUS_INSTALLER_PANEL_CORE_REF
-		ref := strings.TrimSpace(os.Getenv("NOVUS_INSTALLER_PANEL_CORE_REF"))
-		if ref == "" {
-			ref = "main"
-		}
-		// We use the API endpoint which redirects to codeload.github.com.
-		// curl can follow redirects with -L, and we attach the PAT via header.
-		return fmt.Sprintf("https://api.github.com/repos/%s/zipball/%s", panelCoreRepo, url.PathEscape(ref))
-	}
-
-	// Last resort: if env override explicitly set to a custom URL, use it. Otherwise fail.
-	return ""
-}
-
-func detectPlatformProfile() (platformProfile, error) {
-	file, err := os.Open(osReleasePath)
-	if err != nil {
-		return platformProfile{}, fmt.Errorf("platform_detect_failed:%w", err)
-	}
-	defer file.Close()
-
-	profile := platformProfile{}
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-
-		key, value, ok := strings.Cut(line, "=")
-		if !ok {
-			continue
-		}
-
-		value = strings.Trim(value, "\"'")
-		switch strings.TrimSpace(key) {
-		case "ID":
-			profile.ID = strings.ToLower(strings.TrimSpace(value))
-		case "VERSION_ID":
-			profile.VersionID = strings.TrimSpace(value)
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return platformProfile{}, fmt.Errorf("platform_detect_failed:%w", err)
-	}
-	if profile.ID == "" {
-		return platformProfile{}, fmt.Errorf("platform_detect_failed:missing_os_id")
-	}
-
-	return profile, nil
-}
+// [Extracted to steps_system.go: resolveAgentBinaryURL, resolvePanelReleaseURL]
 
 func normalizeDomain(raw string) (string, error) {
 	trimmed := strings.TrimSpace(raw)
@@ -2284,124 +2129,7 @@ var domainLabelPattern = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-z
 // hostname or an IP address. The domain is interpolated into shell commands,
 // nginx config and filesystem paths, so rejecting metacharacters here closes
 // the shell/path/config-injection surface at the boundary.
-func validateInstallHost(value string) error {
-	host := strings.TrimSpace(value)
-	if strings.Contains(host, "://") {
-		if parsed, err := url.Parse(host); err == nil && parsed.Hostname() != "" {
-			host = parsed.Hostname()
-		}
-	}
-	host = strings.TrimSuffix(strings.TrimPrefix(host, "["), "]")
-
-	if host == "" {
-		return fmt.Errorf("setup_request_invalid:domain_required")
-	}
-	if net.ParseIP(host) != nil {
-		return nil
-	}
-	if len(host) > 253 {
-		return fmt.Errorf("setup_request_invalid:domain_invalid")
-	}
-	labels := strings.Split(host, ".")
-	if len(labels) < 2 {
-		return fmt.Errorf("setup_request_invalid:domain_invalid")
-	}
-	for _, label := range labels {
-		if !domainLabelPattern.MatchString(label) {
-			return fmt.Errorf("setup_request_invalid:domain_invalid")
-		}
-	}
-	return nil
-}
-
-// validateAdminEmail enforces RFC 5322 addr-spec form and rejects shell/control
-// characters before the value reaches certbot/panel bootstrap commands.
-func validateAdminEmail(value string) error {
-	email := strings.TrimSpace(value)
-	addr, err := mail.ParseAddress(email)
-	if err != nil || addr.Address != email {
-		return fmt.Errorf("setup_request_invalid:admin_email_invalid")
-	}
-	if strings.ContainsAny(email, " \t\r\n'\"`$;&|<>()\\") {
-		return fmt.Errorf("setup_request_invalid:admin_email_invalid")
-	}
-	at := strings.LastIndex(email, "@")
-	if at < 0 || !strings.Contains(email[at+1:], ".") {
-		return fmt.Errorf("setup_request_invalid:admin_email_invalid")
-	}
-	return nil
-}
-
-// validatePasswordStrength enforces a minimum strength policy for credentials
-// that are later embedded into bootstrap SQL and panel provisioning. The policy
-// requires at least 12 characters spanning three of four character classes
-// (lowercase, uppercase, digit, symbol) and rejects control characters that
-// could corrupt downstream command rendering.
-func validatePasswordStrength(label string, value string) error {
-	if strings.ContainsAny(value, "\x00\r\n") {
-		return fmt.Errorf("setup_request_invalid:%s_invalid", label)
-	}
-	if len([]rune(value)) < 12 {
-		return fmt.Errorf("setup_request_invalid:%s_too_weak", label)
-	}
-
-	var hasLower, hasUpper, hasDigit, hasSymbol bool
-	for _, r := range value {
-		switch {
-		case r >= 'a' && r <= 'z':
-			hasLower = true
-		case r >= 'A' && r <= 'Z':
-			hasUpper = true
-		case r >= '0' && r <= '9':
-			hasDigit = true
-		default:
-			hasSymbol = true
-		}
-	}
-
-	classes := 0
-	for _, present := range []bool{hasLower, hasUpper, hasDigit, hasSymbol} {
-		if present {
-			classes++
-		}
-	}
-	if classes < 3 {
-		return fmt.Errorf("setup_request_invalid:%s_too_weak", label)
-	}
-	return nil
-}
-
-// validateCustomTLSMaterial verifies that the operator-supplied certificate and
-// private key are well-formed PEM, parse as a usable x509 keypair, and that the
-// leaf certificate is not already expired. This blocks malformed or mismatched
-// material before it is written to disk and referenced by the nginx vhost.
-func validateCustomTLSMaterial(certPEM string, keyPEM string) error {
-	cert := []byte(strings.TrimSpace(certPEM) + "\n")
-	key := []byte(strings.TrimSpace(keyPEM) + "\n")
-
-	block, _ := pem.Decode(cert)
-	if block == nil || block.Type != "CERTIFICATE" {
-		return fmt.Errorf("setup_request_invalid:custom_certificate_invalid")
-	}
-	leaf, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return fmt.Errorf("setup_request_invalid:custom_certificate_invalid")
-	}
-
-	keyBlock, _ := pem.Decode(key)
-	if keyBlock == nil || !strings.Contains(keyBlock.Type, "PRIVATE KEY") {
-		return fmt.Errorf("setup_request_invalid:custom_private_key_invalid")
-	}
-
-	if _, err := tls.X509KeyPair(cert, key); err != nil {
-		return fmt.Errorf("setup_request_invalid:custom_certificate_key_mismatch")
-	}
-
-	if now := time.Now(); now.After(leaf.NotAfter) {
-		return fmt.Errorf("setup_request_invalid:custom_certificate_expired")
-	}
-	return nil
-}
+// [Extracted to validators.go]
 
 func escapeSQLLiteral(value string) string {
 	// MySQL/MariaDB treat backslash as an escape character inside string
@@ -2613,6 +2341,17 @@ func ignorePTYReadError(err error) bool {
 	}
 
 	return strings.Contains(strings.ToLower(err.Error()), "input/output error")
+}
+
+// phpPkg returns the full Debian package name for a PHP extension or SAPI.
+// Example: phpPkg("fpm") → "php8.5-fpm", phpPkg("mysql") → "php8.5-mysql".
+func phpPkg(name string) string {
+	return "php" + defaultPHPVersion + "-" + name
+}
+
+// phpBin returns the PHP CLI binary name for the configured default version.
+func phpBin() string {
+	return "php" + defaultPHPVersion
 }
 
 type platformProfile struct {

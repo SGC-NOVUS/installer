@@ -6,12 +6,29 @@ novus-installer-windows-*
 novus-installer-darwin-*
 novus-installer
 
-# Temporary scripts and logs
-*.php
-*.sh
-*.log
-!install.sh
-
-# Go workspace
+# Go build/test artifacts
 *.out
 *.test
+*.prof
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary/scratch files (never commit debug scripts, credentials, or patches)
+*_debug*
+*_scratch*
+*_temp*
+login.json
+*.key
+*.pem
+.env.local
+.env.*.local
+
+# Web build cache
+web/dist/
+

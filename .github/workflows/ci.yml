@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  go-checks:
+    name: Go Checks (installer)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Download Modules
+        run: go mod download
+
+      - name: Verify gofmt
+        run: |
+          fmt_out=$(gofmt -l .)
+          if [ -n "$fmt_out" ]; then
+            echo "::error::The following files are not gofmt-formatted:"
+            echo "$fmt_out"
+            exit 1
+          fi
+
+      - name: Go Vet
+        run: go vet ./...
+
+      - name: Unit Tests
+        run: go test ./... -count=1 -v
+
+      - name: Build (amd64)
+        run: GOOS=linux GOARCH=amd64 go build -o novus-installer-linux-amd64 ./cmd/installer
+
+      - name: Build (arm64)
+        run: GOOS=linux GOARCH=arm64 go build -o novus-installer-linux-arm64 ./cmd/installer
+
+      - name: Verify binaries
+        run: |
+          file novus-installer-linux-amd64
+          file novus-installer-linux-arm64
+          echo "amd64 size: $(stat -c%s novus-installer-linux-amd64) bytes"
+          echo "arm64 size: $(stat -c%s novus-installer-linux-arm64) bytes"

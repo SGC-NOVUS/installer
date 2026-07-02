@@ -6,15 +6,18 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 )
 
 const (
-	minimumRAMBytes = 2 * 1024 * 1024 * 1024
-	osReleasePath   = "/etc/os-release"
-	memInfoPath     = "/proc/meminfo"
+	minimumRAMBytes  = 2 * 1024 * 1024 * 1024
+	minimumDiskBytes = 10 * 1024 * 1024 * 1024 // 10 GB
+	osReleasePath    = "/etc/os-release"
+	memInfoPath      = "/proc/meminfo"
 )
 
 var allowedOS = map[string]map[string]struct{}{
@@ -37,6 +40,7 @@ type Options struct {
 type Result struct {
 	OS            OSRelease
 	TotalRAMBytes uint64
+	DiskFreeBytes uint64
 	Warnings      []string
 	DevMode       bool
 }
@@ -47,6 +51,7 @@ const (
 	issueRoot issueKind = "root"
 	issueOS   issueKind = "os"
 	issueRAM  issueKind = "ram"
+	issueDisk issueKind = "disk"
 	issuePort issueKind = "port"
 )
 
@@ -90,6 +95,15 @@ func (r *Result) TotalRAMString() string {
 	return fmt.Sprintf("%.2f GiB", gb)
 }
 
+// DiskFreeString returns a human-readable free disk space string.
+func (r *Result) DiskFreeString() string {
+	if r.DiskFreeBytes == 0 {
+		return "unknown"
+	}
+	gb := float64(r.DiskFreeBytes) / float64(1024*1024*1024)
+	return fmt.Sprintf("%.2f GB", gb)
+}
+
 func Run(ctx context.Context, options Options) (*Result, error) {
 	if err := checkContext(ctx); err != nil {
 		return nil, err
@@ -100,7 +114,7 @@ func Run(ctx context.Context, options Options) (*Result, error) {
 
 	isDevWarning := func(kind issueKind) bool {
 		switch kind {
-		case issueOS, issueRAM, issuePort:
+		case issueOS, issueRAM, issueDisk, issuePort:
 			return true
 		default:
 			return false
@@ -151,6 +165,25 @@ func Run(ctx context.Context, options Options) (*Result, error) {
 					minimumRAMBytes,
 				))
 			}
+		}
+
+		diskFreeBytes, err := checkDiskSpace("/")
+		if err != nil {
+			recordIssue(issueDisk, err)
+		} else {
+			result.DiskFreeBytes = diskFreeBytes
+			if diskFreeBytes < minimumDiskBytes {
+				recordIssue(issueDisk, fmt.Errorf(
+					"insufficient_disk_space: free=%d bytes want>=%d bytes (%.1f GB available)",
+					diskFreeBytes, minimumDiskBytes,
+					float64(diskFreeBytes)/(1024*1024*1024),
+				))
+			}
+		}
+
+		// Validate essential CLI tools (non-fatal warnings in dev mode).
+		for _, tool := range []string{"mysqldump", "ssh", "sudo", "jq", "openssl"} {
+			result.Warnings = append(result.Warnings, checkToolAvailable(tool)...)
 		}
 
 		for _, port := range []int{80, 443} {
@@ -279,6 +312,26 @@ func readMemTotalBytes(path string) (uint64, error) {
 	}
 
 	return 0, fmt.Errorf("meminfo_missing: MemTotal")
+}
+
+// checkDiskSpace returns the number of free bytes on the filesystem
+// containing the given path using statfs(2).
+func checkDiskSpace(path string) (uint64, error) {
+	var stat syscall.Statfs_t
+	if err := syscall.Statfs(path, &stat); err != nil {
+		return 0, fmt.Errorf("disk_statfs_failed:%s: %w", path, err)
+	}
+	// Available blocks * block size = free bytes for unprivileged users
+	return stat.Bavail * uint64(stat.Bsize), nil
+}
+
+// checkToolAvailable verifies that a CLI tool is on PATH.
+// Returns a warning string if the tool is missing (empty if found).
+func checkToolAvailable(tool string) []string {
+	if _, err := exec.LookPath(tool); err != nil {
+		return []string{fmt.Sprintf("tool_missing:%s — some panel features may not work", tool)}
+	}
+	return nil
 }
 
 func checkContext(ctx context.Context) error {
