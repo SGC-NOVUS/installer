@@ -999,25 +999,25 @@ try {
     @unlink('/tmp/novus_admin_creds.json');
 }
 `
-								credsJSON, err := json.Marshal(map[string]string{
-									"email":    req.AdminEmail,
-									"password": req.AdminPassword,
-								})
-								if err != nil {
-									return fmt.Errorf("admin_creds_json_encode:%w", err)
-								}
+				credsJSON, err := json.Marshal(map[string]string{
+					"email":    req.AdminEmail,
+					"password": req.AdminPassword,
+				})
+				if err != nil {
+					return fmt.Errorf("admin_creds_json_encode:%w", err)
+				}
 
-								return runner.runPTYCommand(ctx,
-									fmt.Sprintf(
-										"cat << 'NOVUSEOF' > /tmp/novus_admin_setup.php\n%s\nNOVUSEOF\n"+
-											"printf %%s %s > /tmp/novus_admin_creds.json && "+
-											"sudo -u www-data php /tmp/novus_admin_setup.php && "+
-											"rm -f /tmp/novus_admin_setup.php",
-										script,
-										shellQuote(string(credsJSON)),
-									))
-							},
-						},
+				return runner.runPTYCommand(ctx,
+					fmt.Sprintf(
+						"cat << 'NOVUSEOF' > /tmp/novus_admin_setup.php\n%s\nNOVUSEOF\n"+
+							"printf %%s %s > /tmp/novus_admin_creds.json && "+
+							"sudo -u www-data php /tmp/novus_admin_setup.php && "+
+							"rm -f /tmp/novus_admin_setup.php",
+						script,
+						shellQuote(string(credsJSON)),
+					))
+			},
+		},
 	}
 
 	steps = append(steps, Step{
@@ -1045,7 +1045,7 @@ file_put_contents('/etc/novus/novus-agent.env', $env);
 			if err != nil {
 				return err
 			}
-			
+
 			// Create service and start
 			serviceScript := `[Unit]
 Description=NOVUS Agent
@@ -1320,7 +1320,7 @@ func panelBridgeCommand() string {
 	return strings.Join([]string{
 		"cd " + shellQuote(panelInstallRoot),
 		// Detect correct PHP binary (prefer our installed version, fallback to php).
-		"PHP_BIN=$(command -v "+phpBin()+" || command -v php || echo php)",
+		"PHP_BIN=$(command -v " + phpBin() + " || command -v php || echo php)",
 		// Ensure composer is available.
 		"if ! command -v composer >/dev/null 2>&1; then " +
 			"echo '[installer] Installing composer...'; " +

@@ -65,8 +65,8 @@ func TestValidateAdminEmail(t *testing.T) {
 
 func TestEscapeSQLLiteral(t *testing.T) {
 	cases := map[string]string{
-		"plain":     "plain",
-		"o'reilly":  "o''reilly",
+		"plain":      "plain",
+		"o'reilly":   "o''reilly",
 		`back\slash`: `back\\slash`,
 		`\' inject`:  `\\'' inject`,
 	}

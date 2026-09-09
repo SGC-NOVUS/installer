@@ -348,4 +348,3 @@ func TestResolvePanelReleaseURL(t *testing.T) {
 		t.Error("env override release url")
 	}
 }
-
