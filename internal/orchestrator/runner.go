@@ -1894,6 +1894,14 @@ const nginxErrorPagesBlock = `
 	}
 `
 
+func nginxServerNames(domain string) string {
+	d := strings.TrimSpace(domain)
+	if isIPAddressHost(d) {
+		return d
+	}
+	return fmt.Sprintf("%s id.%s", d, d)
+}
+
 func renderNginxVHost(domain string) string {
 	return fmt.Sprintf(`server {
 	listen 80;
@@ -1917,7 +1925,7 @@ func renderNginxVHost(domain string) string {
 		deny all;
 	}
 %s}`,
-		domain,
+		nginxServerNames(domain),
 		panelPublicRoot,
 		nginxErrorPagesBlock,
 	)
@@ -1956,8 +1964,8 @@ server {
 		deny all;
 	}
 %s}`,
-		domain,
-		domain,
+		nginxServerNames(domain),
+		nginxServerNames(domain),
 		panelPublicRoot,
 		certificatePath,
 		privateKeyPath,
