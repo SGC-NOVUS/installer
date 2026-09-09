@@ -1356,6 +1356,7 @@ func panelBridgeCommand() string {
 func panelSetupStripCommand() string {
 	return strings.Join([]string{
 		"cd " + shellQuote(panelInstallRoot),
+		"rm -f .env",
 		"rm -f resources/views/setup.php",
 		"rm -f resources/js/setup.js",
 		"rm -rf resources/js/setup",
@@ -1406,10 +1407,10 @@ func (r *Runner) generatePanelEnvironment(ctx context.Context, req SetupRequest,
 		if err := ensureOwnedDirectory(panelSecretsDir, 0o750, uid, gid); err != nil {
 			return err
 		}
-		if err := writeOwnedFile(panelEnvPath, []byte(envContents), 0o640, uid, gid); err != nil {
+		if err := writeOwnedFile(panelSecretsEnvPath, []byte(envContents), 0o640, uid, gid); err != nil {
 			return err
 		}
-		if err := writeOwnedFile(panelSecretsEnvPath, []byte(envContents), 0o640, uid, gid); err != nil {
+		_ = os.Remove(filepath.Join(panelInstallRoot, ".env"))
 			return err
 		}
 		if err := writeOwnedFile(masterKeyFilePath, []byte(masterKey+"\n"), 0o600, uid, gid); err != nil {

@@ -212,7 +212,7 @@ Self-destruct включается только если одновременн�
 
 - Panel root: `/www/panel`
 - Panel public root: `/www/panel/public`
-- Panel env file: `/www/panel/.env`
+- Panel secrets env: `/etc/novus/secrets/panel-novus.env` (в корне `/www/panel/.env` отсутствует для безопасности)
 - Nginx site: `/etc/nginx/sites-available/novus-installer.conf`
 - Canonical manifest: `/etc/novus/manifest.json`
 - Agent binary: `/usr/local/bin/novus-agent`
