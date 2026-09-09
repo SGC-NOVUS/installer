@@ -1,6 +1,6 @@
 # NOVUS Installer — Web API
 
-**Версия:** 1.0.0
+**Версия:** 0.1.0
 
 ---
 
@@ -154,7 +154,7 @@ ws://<vps-ip>:8080/ws/stream
   "type": "complete",
   "success": true,
   "manifest": {
-    "version": "1.0.0",
+    "version": "0.1.0",
     "installed_at": "2026-06-20T10:45:00Z",
     "panel_url": "https://panel.example.com"
   }

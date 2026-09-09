@@ -9,7 +9,9 @@
 ## [0.1.0] — 2026-07-18
 
 ### Added
-- Интерактивный Web-Wizard первичной настройки на Vue 3 и Tailwind CSS.
+- Полный пакет архитектурной и технической документации в директории `docs/` (Architecture, API, Install Steps, Security, Rollback, Frontend, Development).
+- Интерактивный Web-Wizard первичной настройки на Vue 3 и Tailwind CSS (SPA с live-стримингом терминала xterm.js по WebSocket).
+- Двухуровневая стратегия отката (Soft rollback созданных конфигураций/сертификатов и Hard rollback через `cleanup.sh`).
 - Пакет `internal/version` со стандартизированным SemVer 2.0.0 версионированием и `-ldflags`.
 - Preflight валидация окружения для Ubuntu 22.04/24.04 и Debian 12.
 - Автоматический pairing локального агента `novus-agent`.
