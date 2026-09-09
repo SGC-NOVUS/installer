@@ -1411,8 +1411,6 @@ func (r *Runner) generatePanelEnvironment(ctx context.Context, req SetupRequest,
 			return err
 		}
 		_ = os.Remove(filepath.Join(panelInstallRoot, ".env"))
-			return err
-		}
 		if err := writeOwnedFile(masterKeyFilePath, []byte(masterKey+"\n"), 0o600, uid, gid); err != nil {
 			return err
 		}
