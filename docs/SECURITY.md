@@ -88,8 +88,8 @@
 | `/etc/novus/secrets/` | 0700 | root:root |
 | `/etc/novus/secrets/master.key` | 0600 | root:root |
 | `/etc/novus/secrets/*.env` | 0600 | root:root |
-| `/var/www/novus/` | 0750 | www-data:www-data |
-| `/var/www/novus/storage/` | 0775 | www-data:www-data |
+| `/www/panel/` | 0750 | www-data:www-data |
+| `/www/panel/storage/` | 0775 | www-data:www-data |
 | `/var/log/novus-installer/` | 0700 | root:root |
 
 ---

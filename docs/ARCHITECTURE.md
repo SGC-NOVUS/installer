@@ -172,7 +172,7 @@ func main() {
 
 ### Hard Rollback
 - `apt-get purge` установленных пакетов (PHP, Nginx, MariaDB)
-- Удаление директорий `/var/www/novus`, `/etc/novus`
+- Удаление директорий `/www/panel`, `/etc/novus`
 - Доступен только в `--dev` режиме
 
 ---

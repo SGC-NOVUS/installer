@@ -143,8 +143,8 @@ sudo go run cmd/installer/main.go --dev --dry-run
 4. Настройка MariaDB и создание `novus_os`, `novus_id`, `novus_sd`.
 5. Установка `novus-agent`.
 6. Конфигурация Nginx и SSL.
-7. Развертывание кода панели в `/var/www/novus`.
-8. Генерация секретов и `/var/www/novus/.env`.
+7. Развертывание кода панели в `/www/panel`.
+8. Генерация секретов и `/www/panel/.env`.
 9. Laravel bridge layer: `php artisan migrate --force` и `php artisan novus:setup-foundation`.
 10. Запись canonical manifest в `/etc/novus/manifest.json`.
 11. Post-install health check локальным HTTP GET на `127.0.0.1` с заголовком `Host`.
@@ -210,9 +210,9 @@ Self-destruct включается только если одновременн�
 
 ## Полезные пути
 
-- Panel root: `/var/www/novus`
-- Panel public root: `/var/www/novus/public`
-- Panel env file: `/var/www/novus/.env`
+- Panel root: `/www/panel`
+- Panel public root: `/www/panel/public`
+- Panel env file: `/www/panel/.env`
 - Nginx site: `/etc/nginx/sites-available/novus-installer.conf`
 - Canonical manifest: `/etc/novus/manifest.json`
 - Agent binary: `/usr/local/bin/novus-agent`

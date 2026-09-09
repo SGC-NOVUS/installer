@@ -147,22 +147,22 @@ func servicesSetupCommand() string {
 		"ufw allow 9443/tcp 2>/dev/null || true",
 		"ufw --force enable 2>/dev/null || true",
 		// Sudoers rules (deployed after panel code is in place)
-		"if [ -f /var/www/novus/deploy/templates/sudoers.d-sgc-vfs-io ]; then " +
-			"cp /var/www/novus/deploy/templates/sudoers.d-sgc-vfs-io /etc/sudoers.d/sgc-vfs-io 2>/dev/null; " +
+		"if [ -f /www/panel/deploy/templates/sudoers.d-sgc-vfs-io ]; then " +
+			"cp /www/panel/deploy/templates/sudoers.d-sgc-vfs-io /etc/sudoers.d/sgc-vfs-io 2>/dev/null; " +
 			"chmod 440 /etc/sudoers.d/sgc-vfs-io 2>/dev/null; " +
 			"fi",
-		"if [ -f /var/www/novus/deploy/templates/sudoers.d-sgc-console-root ]; then " +
-			"cp /var/www/novus/deploy/templates/sudoers.d-sgc-console-root /etc/sudoers.d/sgc-console-root 2>/dev/null; " +
+		"if [ -f /www/panel/deploy/templates/sudoers.d-sgc-console-root ]; then " +
+			"cp /www/panel/deploy/templates/sudoers.d-sgc-console-root /etc/sudoers.d/sgc-console-root 2>/dev/null; " +
 			"chmod 440 /etc/sudoers.d/sgc-console-root 2>/dev/null; " +
 			"fi",
 		// Supervisor program configs
-		"if [ -f /var/www/novus/deploy/templates/novus-influxd.supervisor.conf ]; then " +
-			"cp /var/www/novus/deploy/templates/novus-influxd.supervisor.conf /etc/supervisor/conf.d/novus-influxd.conf 2>/dev/null; " +
+		"if [ -f /www/panel/deploy/templates/novus-influxd.supervisor.conf ]; then " +
+			"cp /www/panel/deploy/templates/novus-influxd.supervisor.conf /etc/supervisor/conf.d/novus-influxd.conf 2>/dev/null; " +
 			"supervisorctl reread 2>/dev/null || true; " +
 			"supervisorctl update 2>/dev/null || true; " +
 			"fi",
 		// Nginx wildcard template for Loader Studio
-		"if [ -f /var/www/novus/deploy/templates/loader-wildcard.nginx.conf ]; then " +
+		"if [ -f /www/panel/deploy/templates/loader-wildcard.nginx.conf ]; then " +
 			"mkdir -p /www/wwwlogs 2>/dev/null; " +
 			"echo 'Loader wildcard template present (will be activated by Loader Studio setup)' > /dev/null; " +
 			"fi",
@@ -173,9 +173,9 @@ func servicesSetupCommand() string {
 // from the deployed template, substituting PHP binary and panel directory paths.
 func cronSetupCommand() string {
 	return strings.Join([]string{
-		"if [ -f /var/www/novus/deploy/templates/novus-panel.cron ]; then " +
-			"sed -e 's|{{PHP_BIN}}|/usr/bin/" + phpBin() + "|g' -e 's|{{PANEL_DIR}}|/var/www/novus|g' -e 's|^\\* \\* \\* \\* \\* www |* * * * * www |' " +
-			"/var/www/novus/deploy/templates/novus-panel.cron > /etc/cron.d/novus-panel 2>/dev/null; " +
+		"if [ -f /www/panel/deploy/templates/novus-panel.cron ]; then " +
+			"sed -e 's|{{PHP_BIN}}|/usr/bin/" + phpBin() + "|g' -e 's|{{PANEL_DIR}}|/www/panel|g' -e 's|^\\* \\* \\* \\* \\* www |* * * * * www |' " +
+			"/www/panel/deploy/templates/novus-panel.cron > /etc/cron.d/novus-panel 2>/dev/null; " +
 			"chmod 644 /etc/cron.d/novus-panel 2>/dev/null; " +
 			"systemctl reload cron 2>/dev/null || systemctl reload crond 2>/dev/null || true; " +
 			"fi",

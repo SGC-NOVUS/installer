@@ -127,7 +127,7 @@ install -m 0755 /tmp/novus-agent /usr/local/bin/novus-agent
 curl -H "Authorization: Bearer <PAT>" \
     "https://api.github.com/repos/SGC-NOVUS/panel-core/zipball/main" \
     -o /tmp/panel.zip
-unzip /tmp/panel.zip -d /var/www/novus
+unzip /tmp/panel.zip -d /www/panel
 ```
 
 - Требуется GitHub PAT с `repo` доступом
@@ -140,10 +140,10 @@ unzip /tmp/panel.zip -d /var/www/novus
 Копирование и активация cron-файла панели:
 
 ```cron
-* * * * * www-data php /var/www/novus/tools/metrics_tick.php
-* * * * * www-data php /var/www/novus/tools/monitor_tick.php
-* * * * * www-data php /var/www/novus/tools/scheduler_tick.php
-* * * * * www-data php /var/www/novus/tools/backup_tick.php
+* * * * * www-data php /www/panel/tools/metrics_tick.php
+* * * * * www-data php /www/panel/tools/monitor_tick.php
+* * * * * www-data php /www/panel/tools/scheduler_tick.php
+* * * * * www-data php /www/panel/tools/backup_tick.php
 ```
 
 ---

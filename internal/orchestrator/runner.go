@@ -46,9 +46,9 @@ const (
 	panelCoreRepo          = "SGC-NOVUS/panel-core"
 	panelCoreArchivePath   = "panel.zip"
 	panelGithubPATEnv      = "NOVUS_INSTALLER_GITHUB_PAT"
-	panelInstallRoot       = "/var/www/novus"
-	panelPublicRoot        = "/var/www/novus/public"
-	panelEnvPath           = "/var/www/novus/.env"
+	panelInstallRoot       = "/www/panel"
+	panelPublicRoot        = "/www/panel/public"
+	panelEnvPath           = "/www/panel/.env"
 	panelSecretsDir        = "/etc/novus/secrets"
 	panelSecretsEnvPath    = "/etc/novus/secrets/panel-novus.env"
 	masterKeyFilePath      = "/etc/novus/secrets/master.key"
@@ -943,8 +943,8 @@ func (r *Runner) buildInstallSteps(request SetupRequest, domain string, platform
 				// to prevent credential exposure via /proc or process listings.
 				script := `<?php
 declare(strict_types=1);
-chdir('/var/www/novus');
-require '/var/www/novus/bootstrap/app.php';
+chdir('/www/panel');
+require '/www/panel/bootstrap/app.php';
 try {
     $creds = json_decode(file_get_contents('/tmp/novus_admin_creds.json'), true);
     if (!$creds || empty($creds['email']) || empty($creds['password'])) {
@@ -1031,7 +1031,7 @@ try {
 			fullUrl := scheme + domain
 			script := `<?php
 declare(strict_types=1);
-require '/var/www/novus/bootstrap/app.php';
+require '/www/panel/bootstrap/app.php';
 $conn = app(\App\Services\Database\ConnectionManager::class)->connection('os');
 $agentId = 'local-' . bin2hex(random_bytes(4));
 $secret = bin2hex(random_bytes(32));
@@ -1303,6 +1303,9 @@ func panelDeploymentCommand(panelReleaseURL string, githubPAT string) string {
 
 	return strings.Join([]string{
 		"mkdir -p " + shellQuote(panelInstallRoot),
+		"mkdir -p /www/sites",
+		"mkdir -p /var/lib/novus/volumes/games /var/lib/novus/volumes/service /var/lib/novus/volumes/web",
+		"ln -sfn /var/lib/novus/volumes/web /www/containers",
 		curlCmd,
 		"[ -s " + shellQuote(panelArchivePath) + " ]",
 		"test \"$(stat -c%s " + shellQuote(panelArchivePath) + ")\" -ge " + strconv.FormatInt(minPanelArchiveBytes, 10),
@@ -1313,6 +1316,9 @@ func panelDeploymentCommand(panelReleaseURL string, githubPAT string) string {
 		"[ -n \"$EXTRACT_DIR\" ] && (cd \"$EXTRACT_DIR\" && cp -a . " + shellQuote(panelInstallRoot) + "/) || unzip -oq " + shellQuote(panelArchivePath) + " -d " + shellQuote(panelInstallRoot),
 		"rm -rf /tmp/novus_panel_extract",
 		"chown -R www-data:www-data " + shellQuote(panelInstallRoot),
+		"find " + shellQuote(panelInstallRoot) + " -type d -exec chmod 755 {} +",
+		"find " + shellQuote(panelInstallRoot) + " -type f -exec chmod 644 {} +",
+		"chmod -R 775 " + shellQuote(panelInstallRoot+"/storage") + " " + shellQuote(panelInstallRoot+"/bootstrap/cache") + " 2>/dev/null || true",
 	}, " && ")
 }
 
@@ -1363,6 +1369,9 @@ func panelSetupStripCommand() string {
 		"if [ -d tests/Unit/Setup ]; then rm -rf tests/Unit/Setup; fi",
 		"if [ -d tests/Feature/Setup ]; then rm -rf tests/Feature/Setup; fi",
 		"chown -R www-data:www-data " + shellQuote(panelInstallRoot),
+		"find " + shellQuote(panelInstallRoot) + " -type d -exec chmod 755 {} +",
+		"find " + shellQuote(panelInstallRoot) + " -type f -exec chmod 644 {} +",
+		"chmod -R 775 " + shellQuote(panelInstallRoot+"/storage") + " " + shellQuote(panelInstallRoot+"/bootstrap/cache") + " 2>/dev/null || true",
 	}, " && ")
 }
 
@@ -1419,7 +1428,7 @@ func (r *Runner) generatePanelEnvironment(ctx context.Context, req SetupRequest,
 		phpScript := `<?php
 $key = "` + masterKey + `";
 $canary = hash_hmac('sha256', $key, php_uname('n'));
-$dir = '/var/www/novus/storage/app/secure';
+$dir = '/www/panel/storage/app/secure';
 if (!is_dir($dir)) { mkdir($dir, 0700, true); chown($dir, 'www-data'); }
 $path = $dir . '/.novus_canary';
 file_put_contents($path, $canary . "\n");
@@ -1499,8 +1508,8 @@ func (r *Runner) applyRestoreBundle(ctx context.Context, req SetupRequest) error
 	script := `<?php
 declare(strict_types=1);
 
-chdir('/var/www/novus');
-require '/var/www/novus/bootstrap/app.php';
+chdir('/www/panel');
+require '/www/panel/bootstrap/app.php';
 
 $raw = @file_get_contents($argv[1] ?? '');
 $input = json_decode((string) $raw, true);
@@ -1603,8 +1612,8 @@ func (r *Runner) applyPanelConfiguration(ctx context.Context, req SetupRequest) 
 	script := `<?php
 declare(strict_types=1);
 
-chdir('/var/www/novus');
-require '/var/www/novus/bootstrap/app.php';
+chdir('/www/panel');
+require '/www/panel/bootstrap/app.php';
 
 try {
 	$raw = @file_get_contents($argv[1] ?? '');
@@ -1683,8 +1692,8 @@ func (r *Runner) deployCloudflareKMS(ctx context.Context, req SetupRequest) erro
 	script := `<?php
 declare(strict_types=1);
 
-chdir('/var/www/novus');
-require '/var/www/novus/bootstrap/app.php';
+chdir('/www/panel');
+require '/www/panel/bootstrap/app.php';
 
 $raw = @file_get_contents($argv[1] ?? '');
 $input = json_decode((string) $raw, true);

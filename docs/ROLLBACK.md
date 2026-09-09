@@ -27,7 +27,7 @@
 
 **Не удаляет:**
 - Установленные пакеты (nginx, mariadb, php, etc.)
-- Директорию `/var/www/novus/` (может содержать пользовательские данные)
+- Директорию `/www/panel/` (может содержать пользовательские данные)
 - Базы данных
 - Системные сервисы
 
@@ -38,7 +38,7 @@
 | Действие | Команда |
 |----------|---------|
 | Удаление пакетов | `apt-get purge -y nginx mariadb-server php8.5-* redis-server supervisor influxdb2 fail2ban` |
-| Удаление директорий | `rm -rf /var/www/novus /etc/novus /var/log/novus-installer` |
+| Удаление директорий | `rm -rf /www/panel /etc/novus /var/log/novus-installer` |
 | Удаление репозиториев | `rm -f /etc/apt/sources.list.d/php*.list /etc/apt/sources.list.d/mariadb*.list /etc/apt/sources.list.d/influxdb.list` |
 | Очистка APT | `apt-get autoremove -y && apt-get clean` |
 
@@ -75,7 +75,7 @@ systemctl reload nginx
 # Hard rollback вручную (ТОЛЬКО тестовые окружения!)
 systemctl stop nginx mariadb php8.5-fpm redis-server supervisor influxdb fail2ban novus-agent
 apt-get purge -y nginx mariadb-server 'php8.5-*' redis-server supervisor influxdb2 fail2ban
-rm -rf /var/www/novus /etc/novus /var/log/novus-installer
+rm -rf /www/panel /etc/novus /var/log/novus-installer
 apt-get autoremove -y
 ```
 
@@ -102,7 +102,7 @@ apt-get autoremove -y
 
 ### Сбой на шаге 9 (панель)
 - Файлы панели распакованы частично
-- Soft rollback: удаление `/var/www/novus`
+- Soft rollback: удаление `/www/panel`
 
 ### Сбой на шаге 10+ (конфигурация)
 - Система в mixed state
