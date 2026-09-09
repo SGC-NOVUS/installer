@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/sgc-novus/novus-installer/internal/preflight"
+	"github.com/sgc-novus/novus-installer/internal/version"
 	webserver "github.com/sgc-novus/novus-installer/internal/web"
 )
 
@@ -32,7 +33,7 @@ func main() {
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Println("novus-installer 1.0.0")
+		fmt.Printf("novus-installer %s\n", version.Info())
 		return
 	}
 

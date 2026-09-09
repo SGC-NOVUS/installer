@@ -1,28 +1,23 @@
 package orchestrator
 
 import (
-	"bufio"
 	"context"
 	"crypto/rand"
 	"crypto/tls"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net"
 	"net/http"
-	"net/mail"
 	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -1776,14 +1771,14 @@ func (r *Runner) runPanelBootstrapJSONTask(ctx context.Context, description stri
 			return fmt.Errorf("panel_task_json_close_failed:%w", err)
 		}
 
-		phpBin := "php"
+		phpCli := "php"
 		if path, err := exec.LookPath(phpBin()); err == nil {
-			phpBin = path
+			phpCli = path
 		} else if path, err := exec.LookPath("php"); err == nil {
-			phpBin = path
+			phpCli = path
 		}
 
-		cmd := exec.CommandContext(ctx, "sudo", "-u", "www-data", phpBin, phpPath, jsonPath)
+		cmd := exec.CommandContext(ctx, "sudo", "-u", "www-data", phpCli, phpPath, jsonPath)
 		cmd.Dir = panelInstallRoot
 		cmd.Env = append(os.Environ(), "LC_ALL=C.UTF-8")
 		output, err := cmd.CombinedOutput()
@@ -1978,31 +1973,7 @@ func customPrivateKeyPath(domain string) string {
 	return sslAssetDir + "/" + strings.TrimSpace(domain) + ".key"
 }
 
-// [Extracted to steps_system.go: resolveAgentBinaryURL, resolvePanelReleaseURL]
-
-func normalizeDomain(raw string) (string, error) {
-	trimmed := strings.TrimSpace(raw)
-	if trimmed == "" {
-		return "", fmt.Errorf("domain_required")
-	}
-
-	parseTarget := trimmed
-	if !strings.Contains(parseTarget, "://") {
-		parseTarget = "https://" + parseTarget
-	}
-
-	parsed, err := url.Parse(parseTarget)
-	if err != nil {
-		return "", fmt.Errorf("domain_invalid:%w", err)
-	}
-
-	host := strings.TrimSpace(parsed.Hostname())
-	if host == "" {
-		return "", fmt.Errorf("domain_invalid:host_missing")
-	}
-
-	return host, nil
-}
+// [Duplicate normalizeDomain removed - canonical in runner.go]
 
 func renderPanelEnvironment(req SetupRequest, appURL string, appKey string, masterKey string, sharedSecret string) string {
 	integrations := integrationFieldLookup(req.normalizedIntegrations())
