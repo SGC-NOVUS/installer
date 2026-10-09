@@ -65,10 +65,10 @@ func main() {
     // Флаги
     dev := flag.Bool("dev", false, "Dev mode (skip some checks)")
     dryRun := flag.Bool("dry-run", false, "Dry run (no real changes)")
-    
+
     // Preflight
     preflight.Run()
-    
+
     // Web-сервер на :8080
     server := web.NewServer()
     server.ListenAndServe()
@@ -88,12 +88,12 @@ func main() {
 
 | Проверка | Критерий |
 |----------|----------|
-| **ОС** | Ubuntu 22.04/24.04 или Debian 12 (через `/etc/os-release`) |
+| **ОС** | Ubuntu 22.04/24.04/26.04/26.10 или Debian 12/13 (через `/etc/os-release`) |
 | **RAM** | Минимум 2 GiB (через `/proc/meminfo`) |
 | **Disk** | Минимум 10 GB свободного места на `/` |
-| **Порты** | 80, 443, 8080, 9443 не заняты |
-| **Root** | Процесс запущен от root или с sudo |
-| **Arch** | x86_64 или aarch64 |
+| **Порты** | Только 80 и 443 проверяются текущим кодом |
+| **Root** | Effective UID должен быть 0; запуск через sudo допустим, если он даёт root |
+| **Arch** | Не проверяется текущим preflight |
 
 ---
 
@@ -102,7 +102,7 @@ func main() {
 ### HTTP-сервер (`server.go`)
 - Порт: 8080
 - Статические файлы: встроенный SPA через `go:embed`
-- CORS: разрешён только localhost
+- Все UI/API пути требуют tokenized session; CORS middleware не зарегистрирован
 
 ### API (`api.go`)
 - `POST /api/setup` — приём конфигурации установки
@@ -110,14 +110,14 @@ func main() {
 - Запуск оркестратора в фоне
 
 ### WebSocket Stream (`stream.go`)
-- `GET /ws/stream` — live-stream установки
+- `GET /api/stream` — live-stream установки
 - PTY-вывод в реальном времени
 - JSON-сообщения о статусе шагов
 
 ### Аутентификация
 - Токен в URL: `http://<vps-ip>:8080/?token=<random>`
-- После первого запроса — HttpOnly cookie
-- Токен генерируется при запуске (crypto/rand, 32 байта)
+- После первого запроса — `HttpOnly`, `SameSite=Strict` cookie; `Secure` атрибут текущим кодом не устанавливается
+- Токен генерируется при запуске из 16 случайных байтов и выводится как 32 hex-символа
 
 ---
 
@@ -181,7 +181,8 @@ func main() {
 
 После успешной установки бинарник инсталлятора удаляет сам себя:
 ```go
-os.Remove(os.Args[0])
+path, _ := os.Executable()
+os.Remove(path)
 ```
 Отключается флагами `--dev` или `--dry-run`.
 
@@ -194,3 +195,7 @@ os.Remove(os.Args[0])
 - Встраивается в бинарник через `go:embed`
 - i18n: русский и английский
 - Live-stream установки через WebSocket + xterm.js
+
+## 10. Source-checked audit
+
+Текущая реализация, переменные окружения, preflight, асинхронный pipeline и best-effort rollback зафиксированы во внутреннем документе [GROUND_TRUTH_IMPLEMENTATION_2026-09-28.md](GROUND_TRUTH_IMPLEMENTATION_2026-09-28.md). Он не заменяет публичное руководство и не предназначен для публикации без security review.

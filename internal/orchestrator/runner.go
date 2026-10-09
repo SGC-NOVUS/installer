@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/tls"
+	_ "embed"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -41,32 +42,34 @@ const (
 	// Requires GitHub PAT with repo-read scope, set via NOVUS_INSTALLER_PANEL_RELEASE_URL
 	// or the env vars NOVUS_INSTALLER_GITHUB_PAT + NOVUS_INSTALLER_PANEL_RELEASE_URL.
 	// In the future, panels will be SourceGuard-encrypted and published to the public SGC-NOVUS/panel repo.
-	defaultPanelReleaseURL = "" // Must be explicitly set via env — no default, we refuse to download from empty public repo.
-	panelReleaseURLEnv     = "NOVUS_INSTALLER_PANEL_RELEASE_URL"
-	panelCoreRepo          = "SGC-NOVUS/panel-core"
-	panelCoreArchivePath   = "panel.zip"
-	panelGithubPATEnv      = "NOVUS_INSTALLER_GITHUB_PAT"
-	panelInstallRoot       = "/www/panel"
-	panelPublicRoot        = "/www/panel/public"
-	panelEnvPath           = "/www/panel/.env"
-	panelSecretsDir        = "/etc/novus/secrets"
-	panelSecretsEnvPath    = "/etc/novus/secrets/panel-novus.env"
-	masterKeyFilePath      = "/etc/novus/secrets/master.key"
-	pendingMasterKeyPath   = "/etc/novus/secrets/master.key.next"
-	cloudflareSharedSecret = "/etc/novus/secrets/cloudflare_kms_shared_secret"
-	nginxSitePath          = "/etc/nginx/sites-available/novus-installer.conf"
-	nginxSiteEnabledPath   = "/etc/nginx/sites-enabled/novus-installer.conf"
-	manifestDir            = "/etc/novus"
-	sslAssetDir            = "/etc/novus/ssl"
-	manifestPath           = "/etc/novus/manifest.json"
-	panelArchivePath       = "/tmp/panel.zip"
-	agentDownloadPath      = "/tmp/novus-agent"
-	cloudflareCredsPath    = "/root/.secrets/certbot/cloudflare.ini"
-	localHealthCheckURL    = "http://127.0.0.1/"
-	defaultDryRunDelay     = time.Second
-	healthCheckTimeout     = 5 * time.Second
-	minPanelArchiveBytes   = int64(10 * 1024)
-	minAgentBinaryBytes    = int64(1024)
+	defaultPanelReleaseURL       = "" // Must be explicitly set via env — no default, we refuse to download from empty public repo.
+	panelReleaseURLEnv           = "NOVUS_INSTALLER_PANEL_RELEASE_URL"
+	panelCoreRepo                = "SGC-NOVUS/panel-core"
+	panelCoreArchivePath         = "panel.zip"
+	panelGithubPATEnv            = "NOVUS_INSTALLER_GITHUB_PAT"
+	panelInstallRoot             = "/www/panel"
+	panelPublicRoot              = "/www/panel/public"
+	panelEnvPath                 = "/www/panel/.env"
+	panelSecretsDir              = "/etc/novus/secrets"
+	panelSecretsEnvPath          = "/etc/novus/secrets/panel-novus.env"
+	moduleRegistryPublicKeysPath = "/etc/novus/secrets/module_registry_public_keys.json"
+	moduleRegistrySignatureKeyID = "sgc-novus-modules"
+	masterKeyFilePath            = "/etc/novus/secrets/master.key"
+	pendingMasterKeyPath         = "/etc/novus/secrets/master.key.next"
+	cloudflareSharedSecret       = "/etc/novus/secrets/cloudflare_kms_shared_secret"
+	nginxSitePath                = "/etc/nginx/sites-available/novus-installer.conf"
+	nginxSiteEnabledPath         = "/etc/nginx/sites-enabled/novus-installer.conf"
+	manifestDir                  = "/etc/novus"
+	sslAssetDir                  = "/etc/novus/ssl"
+	manifestPath                 = "/etc/novus/manifest.json"
+	panelArchivePath             = "/tmp/panel.zip"
+	agentDownloadPath            = "/tmp/novus-agent"
+	cloudflareCredsPath          = "/root/.secrets/certbot/cloudflare.ini"
+	localHealthCheckURL          = "http://127.0.0.1/"
+	defaultDryRunDelay           = time.Second
+	healthCheckTimeout           = 5 * time.Second
+	minPanelArchiveBytes         = int64(10 * 1024)
+	minAgentBinaryBytes          = int64(1024)
 
 	// defaultPTYStepTimeout is the maximum wall-clock time a single install
 	// step may spend in its PTY command before the context is cancelled.
@@ -79,6 +82,9 @@ const (
 	// upgrade PHP across all commands, package lists, and purge steps.
 	defaultPHPVersion = "8.5"
 )
+
+//go:embed assets/module_registry_public_key.txt
+var moduleRegistryPublicKeyPEM string
 
 var ErrAlreadyRunning = errors.New("install_already_running")
 
@@ -1029,19 +1035,8 @@ try {
 				scheme = "http://"
 			}
 			fullUrl := scheme + domain
-			script := `<?php
-declare(strict_types=1);
-require '/www/panel/bootstrap/app.php';
-$conn = app(\App\Services\Database\ConnectionManager::class)->connection('os');
-$agentId = 'local-' . bin2hex(random_bytes(4));
-$secret = bin2hex(random_bytes(32));
-$stmt = $conn->prepare("INSERT INTO panel_nodes (node_uuid, node_agent_id, name, location, is_public, status, host, port, secret_key, connection_type, created_at, updated_at) VALUES (UUID(), ?, 'Local Node', 'Local', 0, 'active', '127.0.0.1', 9443, ?, 'direct', NOW(), NOW())");
-$stmt->execute([$agentId, $secret]);
-$domain = "` + fullUrl + `";
-$env = "NOVUS_AGENT_PANEL_URL=\"{$domain}\"\nNOVUS_AGENT_ID=\"{$agentId}\"\nNOVUS_AGENT_SHARED_SECRET=\"{$secret}\"\n";
-file_put_contents('/etc/novus/novus-agent.env', $env);
-`
-			err := runner.runPTYCommand(ctx, "cat << 'EOF' > /tmp/agent_setup.php\n"+script+"\nEOF\nphp /tmp/agent_setup.php && rm -f /tmp/agent_setup.php")
+			script := renderLocalAgentBootstrapScript(fullUrl)
+			err := runner.runPTYCommand(ctx, "cat << 'EOF' > /tmp/agent_setup.php\n"+script+"\nEOF\nsudo -u www-data php /tmp/agent_setup.php && mv /tmp/novus-agent.env /etc/novus/novus-agent.env && chmod 0600 /etc/novus/novus-agent.env && rm -f /tmp/agent_setup.php")
 			if err != nil {
 				return err
 			}
@@ -1389,6 +1384,10 @@ func (r *Runner) generatePanelEnvironment(ctx context.Context, req SetupRequest,
 	if err != nil {
 		return err
 	}
+	moduleRegistryPublicKeysPayload, err := renderModuleRegistryPublicKeysFile()
+	if err != nil {
+		return err
+	}
 	envContents := renderPanelEnvironment(req, buildFinishURL(domain, req.effectiveSSLMode()), appKey, masterKey, sharedSecret)
 	description := "generate panel env, runtime secrets, and write bootstrap files"
 
@@ -1405,6 +1404,9 @@ func (r *Runner) generatePanelEnvironment(ctx context.Context, req SetupRequest,
 			return err
 		}
 		if err := ensureOwnedDirectory(panelSecretsDir, 0o750, uid, gid); err != nil {
+			return err
+		}
+		if err := writeOwnedFile(moduleRegistryPublicKeysPath, moduleRegistryPublicKeysPayload, 0o640, uid, gid); err != nil {
 			return err
 		}
 		if err := writeOwnedFile(panelSecretsEnvPath, []byte(envContents), 0o640, uid, gid); err != nil {
@@ -2053,6 +2055,10 @@ func renderPanelEnvironment(req SetupRequest, appURL string, appKey string, mast
 		"STEAM_WEB_API_KEY=" + quoteEnvValue(integrationField(integrations, "steam", "steam_web_api_key")),
 		"NOVUS_CLOUDFLARE_KMS_WORKER_URL=" + quoteEnvValue(strings.TrimSpace(req.CloudflareKMS.WorkerURL)),
 		"NOVUS_CLOUDFLARE_KMS_SHARED_SECRET_FILE=" + quoteEnvValue(cloudflareSharedSecret),
+		"MODULE_REGISTRY_SIGNATURE_KEYS_FILE=" + quoteEnvValue(moduleRegistryPublicKeysPath),
+		"MODULE_REGISTRY_SIGNATURE_KEY_ALLOWLIST=" + quoteEnvValue(moduleRegistrySignatureKeyID),
+		"MODULE_REGISTRY_SIGNATURE_DEFAULT_KEY_ID=" + quoteEnvValue(moduleRegistrySignatureKeyID),
+		"MODULE_REGISTRY_SIGNATURE_ALLOW_DEFAULT_FALLBACK=" + quoteEnvValue(strconv.FormatBool(false)),
 	}
 
 	if req.effectiveMasterKeyBackend() == "tier2_cloudflare_zero_disk_kms" && sharedSecret != "" {
@@ -2060,6 +2066,43 @@ func renderPanelEnvironment(req SetupRequest, appURL string, appKey string, mast
 	}
 
 	return strings.Join(lines, "\n") + "\n"
+}
+
+func renderModuleRegistryPublicKeysFile() ([]byte, error) {
+	publicKey := strings.TrimSpace(moduleRegistryPublicKeyPEM)
+	if publicKey == "" {
+		return nil, fmt.Errorf("module_registry_public_key_missing")
+	}
+
+	payload := map[string]string{
+		moduleRegistrySignatureKeyID: publicKey,
+	}
+
+	raw, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("module_registry_public_keys_json_encode_failed:%w", err)
+	}
+
+	return append(raw, '\n'), nil
+}
+
+func renderLocalAgentBootstrapScript(panelURL string) string {
+	escapedPanelURL := strings.ReplaceAll(panelURL, `\`, `\\`)
+	escapedPanelURL = strings.ReplaceAll(escapedPanelURL, `"`, `\"`)
+
+	return `<?php
+declare(strict_types=1);
+require '/www/panel/bootstrap/app.php';
+$conn = app(\App\Services\Database\ConnectionManager::class)->connection('os');
+$agentId = 'local-' . bin2hex(random_bytes(4));
+$secret = bin2hex(random_bytes(32));
+$stmt = $conn->prepare("INSERT INTO panel_nodes (node_uuid, node_agent_id, name, location, is_public, status, host, port, secret_key, connection_type, created_at, updated_at) VALUES (UUID(), ?, 'Local Node', 'Local', 0, 'active', '127.0.0.1', 9443, ?, 'direct', NOW(), NOW())");
+$stmt->execute([$agentId, $secret]);
+$domain = "` + escapedPanelURL + `";
+$env = "NOVUS_AGENT_PANEL_URL=\"{$domain}\"\nNOVUS_AGENT_ID=\"{$agentId}\"\nNOVUS_AGENT_SHARED_SECRET=\"{$secret}\"\n";
+file_put_contents('/tmp/novus-agent.env', $env);
+chmod('/tmp/novus-agent.env', 0600);
+`
 }
 
 func writeFileCommand(path string, contents string) string {

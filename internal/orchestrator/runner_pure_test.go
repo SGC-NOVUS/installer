@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"encoding/json"
 	"runtime"
 	"strings"
 	"testing"
@@ -305,6 +306,10 @@ func TestRenderPanelEnvironment(t *testing.T) {
 		`APP_URL="https://panel.example.com"`,
 		"DB_PORT=3306",
 		`NOVUS_MASTER_KEY="MASTERKEY"`,
+		`MODULE_REGISTRY_SIGNATURE_KEYS_FILE="/etc/novus/secrets/module_registry_public_keys.json"`,
+		`MODULE_REGISTRY_SIGNATURE_KEY_ALLOWLIST="sgc-novus-modules"`,
+		`MODULE_REGISTRY_SIGNATURE_DEFAULT_KEY_ID="sgc-novus-modules"`,
+		`MODULE_REGISTRY_SIGNATURE_ALLOW_DEFAULT_FALLBACK="false"`,
 		"TELEGRAM_ENABLED=\"true\"",
 		`TELEGRAM_BOT_TOKEN="BOT:TOK"`,
 		`TELEGRAM_CHAT_ID="12345"`,
@@ -335,6 +340,27 @@ func TestRenderPanelEnvironmentCloudflareSharedSecret(t *testing.T) {
 	env2 := renderPanelEnvironment(SetupRequest{}, "https://x", "k", "m", "SHARED")
 	if strings.Contains(env2, "NOVUS_CLOUDFLARE_KMS_SHARED_SECRET=\"SHARED\"") {
 		t.Error("default backend must not emit inline shared secret")
+	}
+}
+
+func TestRenderModuleRegistryPublicKeysFile(t *testing.T) {
+	raw, err := renderModuleRegistryPublicKeysFile()
+	if err != nil {
+		t.Fatalf("renderModuleRegistryPublicKeysFile() error = %v", err)
+	}
+
+	decoded := map[string]string{}
+	if err := json.Unmarshal(raw, &decoded); err != nil {
+		t.Fatalf("json unmarshal: %v", err)
+	}
+
+	got := strings.TrimSpace(decoded[moduleRegistrySignatureKeyID])
+	want := strings.TrimSpace(moduleRegistryPublicKeyPEM)
+	if got == "" {
+		t.Fatalf("key %q missing in rendered payload", moduleRegistrySignatureKeyID)
+	}
+	if got != want {
+		t.Fatal("embedded module registry public key mismatch")
 	}
 }
 

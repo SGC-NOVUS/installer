@@ -123,6 +123,22 @@ func TestRenderNginxTLSVHost(t *testing.T) {
 	}
 }
 
+func TestRenderLocalAgentBootstrapScriptContainsPanelURL(t *testing.T) {
+	script := renderLocalAgentBootstrapScript("https://panel.example.com")
+	if !strings.Contains(script, `$domain = "https://panel.example.com";`) {
+		t.Error("bootstrap script should embed normalized panel URL")
+	}
+	if !strings.Contains(script, `NOVUS_AGENT_PANEL_URL=\"{$domain}\"`) {
+		t.Error("bootstrap script should write NOVUS_AGENT_PANEL_URL into novus-agent.env")
+	}
+	if !strings.Contains(script, `NOVUS_AGENT_ID=\"{$agentId}\"`) {
+		t.Error("bootstrap script should write NOVUS_AGENT_ID into novus-agent.env")
+	}
+	if !strings.Contains(script, `NOVUS_AGENT_SHARED_SECRET=\"{$secret}\"`) {
+		t.Error("bootstrap script should write NOVUS_AGENT_SHARED_SECRET into novus-agent.env")
+	}
+}
+
 func TestQuoteEnvValueEscaping(t *testing.T) {
 	got := quoteEnvValue("a\"b\\c\nd")
 	if !strings.Contains(got, "\\\"") || !strings.Contains(got, "\\\\") || !strings.Contains(got, "\\n") {
