@@ -178,7 +178,7 @@ ws://<vps-ip>:8080/ws/stream
 | `ssl_key_invalid` | Невалидный PEM-ключ |
 | `integration_required_fields` | Не заполнены обязательные поля интеграции |
 | `security_entrance_path_reserved` | Зарезервированный путь |
-| `panel_release_url_missing` | Не указан URL панели или GitHub PAT |
+| `panel_release_url_missing` | Не указан URL архива панели |
 | `install_already_running` | Установка уже выполняется |
 
 ---

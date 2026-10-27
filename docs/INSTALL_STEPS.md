@@ -121,16 +121,15 @@ install -m 0755 /tmp/novus-agent /usr/local/bin/novus-agent
 
 ## Шаг 9: Развёртывание панели
 
-Скачивание кода панели из приватного репозитория `SGC-NOVUS/panel-core`:
+Скачивание кода панели из публичного release-репозитория `SGC-NOVUS/panel`:
 
 ```bash
-curl -H "Authorization: Bearer <PAT>" \
-    "https://api.github.com/repos/SGC-NOVUS/panel-core/zipball/main" \
+curl -fL \
+    "https://github.com/SGC-NOVUS/panel/releases/latest/download/panel.zip" \
     -o /tmp/panel.zip
 unzip /tmp/panel.zip -d /www/panel
 ```
 
-- Требуется GitHub PAT с `repo` доступом
 - Проверка минимального размера архива (≥10 KiB)
 
 ---

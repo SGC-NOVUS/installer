@@ -8,13 +8,7 @@
 curl -fsSL https://raw.githubusercontent.com/SGC-NOVUS/installer/main/install.sh | sudo bash
 ```
 
-GitHub PAT **не нужен** для скачивания установщика. PAT потребуется позже — веб-интерфейс запросит его для доступа к приватному `SGC-NOVUS/panel-core`.
-
-Можно передать PAT заранее через переменную окружения:
-
-```bash
-NOVUS_INSTALLER_GITHUB_PAT="github_pat_..." sudo -E bash install.sh
-```
+GitHub PAT **не нужен** для скачивания установщика и стандартной установки панели/агента из публичных release-каналов.
 
 Или вручную:
 
@@ -23,29 +17,24 @@ go install github.com/SGC-NOVUS/novus-installer/cmd/installer@latest
 sudo novus-installer
 ```
 
-При установке запросит `GitHub PAT` для доступа к приватному репозиторию `SGC-NOVUS/panel-core`.
-
 ## Быстрый старт
 
 ```bash
 # Dry-run проверка
 sudo ./novus-installer --dev --dry-run
 
-# Боевая установка (запросит github_pat в веб-интерфейсе)
+# Боевая установка
 sudo ./novus-installer
-
-# С явным PAT через env
-NOVUS_INSTALLER_GITHUB_PAT="github_pat_..." sudo -E ./novus-installer
 ```
 
 ## Переменные окружения
 
 | Переменная | Назначение | По умолчанию |
 |-----------|----------|-------------|
-| `NOVUS_INSTALLER_GITHUB_PAT` | GitHub PAT для скачивания панели | (запрашивается в UI) |
-| `NOVUS_INSTALLER_PANEL_RELEASE_URL` | URL архива панели | `api.github.com/repos/SGC-NOVUS/panel-core/zipball/main` |
-| `NOVUS_INSTALLER_PANEL_CORE_REF` | Ветка/тег panel-core | `main` |
+| `NOVUS_INSTALLER_PANEL_RELEASE_URL` | URL архива панели | `https://github.com/SGC-NOVUS/panel/releases/latest/download/panel.zip` |
 | `NOVUS_INSTALLER_AGENT_BINARY_URL` | URL бинарника агента | `releases/latest/download/novus-agent-linux-amd64` |
+| `NOVUS_INSTALLER_MODULE_REGISTRY_URL` | URL registry/index.json модулей | `https://raw.githubusercontent.com/SGC-NOVUS/modules/main/registry/index.json` |
+| `NOVUS_INSTALLER_MODULE_BOOTSTRAP_POOL` | CSV базового пула модулей при первом старте | `overview,users,profile,security,settings,monitoring,files,services,websites,databases,scheduler,terminal,backups` |
 
 ## Возможности
 
@@ -122,6 +111,12 @@ sudo go run cmd/installer/main.go --dev --dry-run
 
 - `NOVUS_INSTALLER_PANEL_RELEASE_URL`
 - `NOVUS_INSTALLER_AGENT_BINARY_URL`
+
+Модульный bootstrap через registry:
+
+- `NOVUS_INSTALLER_MODULE_REGISTRY_URL` — источник каталога модулей.
+- `NOVUS_INSTALLER_MODULE_BOOTSTRAP_POOL` — базовый пул модулей, который инсталлятор разрешает к автосинхронизации.
+  - специальное значение `all` или `*` отключает ограничения пула.
 
 Логика загрузки:
 

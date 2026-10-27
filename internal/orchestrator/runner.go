@@ -29,47 +29,45 @@ import (
 )
 
 const (
-	osReleasePath         = "/etc/os-release"
-	defaultOSDBName       = "novus_os"
-	defaultIDDBName       = "novus_id"
-	defaultSDDBName       = "novus_sd"
-	defaultSystemDBUser   = "novus_panel"
-	defaultIdentityDBUser = "novus_id"
-	defaultAgentAMD64URL  = "https://github.com/SGC-NOVUS/agent/releases/latest/download/novus-agent-linux-amd64"
-	defaultAgentARM64URL  = "https://github.com/SGC-NOVUS/agent/releases/latest/download/novus-agent-linux-arm64"
-	agentBinaryURLEnv     = "NOVUS_INSTALLER_AGENT_BINARY_URL"
-	// Panel source: PRIVATE repository SGC-NOVUS/panel-core (NOT the empty public SGC-NOVUS/panel).
-	// Requires GitHub PAT with repo-read scope, set via NOVUS_INSTALLER_PANEL_RELEASE_URL
-	// or the env vars NOVUS_INSTALLER_GITHUB_PAT + NOVUS_INSTALLER_PANEL_RELEASE_URL.
-	// In the future, panels will be SourceGuard-encrypted and published to the public SGC-NOVUS/panel repo.
-	defaultPanelReleaseURL       = "" // Must be explicitly set via env — no default, we refuse to download from empty public repo.
-	panelReleaseURLEnv           = "NOVUS_INSTALLER_PANEL_RELEASE_URL"
-	panelCoreRepo                = "SGC-NOVUS/panel-core"
-	panelCoreArchivePath         = "panel.zip"
-	panelGithubPATEnv            = "NOVUS_INSTALLER_GITHUB_PAT"
-	panelInstallRoot             = "/www/panel"
-	panelPublicRoot              = "/www/panel/public"
-	panelEnvPath                 = "/www/panel/.env"
-	panelSecretsDir              = "/etc/novus/secrets"
-	panelSecretsEnvPath          = "/etc/novus/secrets/panel-novus.env"
-	moduleRegistryPublicKeysPath = "/etc/novus/secrets/module_registry_public_keys.json"
-	moduleRegistrySignatureKeyID = "sgc-novus-modules"
-	masterKeyFilePath            = "/etc/novus/secrets/master.key"
-	pendingMasterKeyPath         = "/etc/novus/secrets/master.key.next"
-	cloudflareSharedSecret       = "/etc/novus/secrets/cloudflare_kms_shared_secret"
-	nginxSitePath                = "/etc/nginx/sites-available/novus-installer.conf"
-	nginxSiteEnabledPath         = "/etc/nginx/sites-enabled/novus-installer.conf"
-	manifestDir                  = "/etc/novus"
-	sslAssetDir                  = "/etc/novus/ssl"
-	manifestPath                 = "/etc/novus/manifest.json"
-	panelArchivePath             = "/tmp/panel.zip"
-	agentDownloadPath            = "/tmp/novus-agent"
-	cloudflareCredsPath          = "/root/.secrets/certbot/cloudflare.ini"
-	localHealthCheckURL          = "http://127.0.0.1/"
-	defaultDryRunDelay           = time.Second
-	healthCheckTimeout           = 5 * time.Second
-	minPanelArchiveBytes         = int64(10 * 1024)
-	minAgentBinaryBytes          = int64(1024)
+	osReleasePath                   = "/etc/os-release"
+	defaultOSDBName                 = "novus_os"
+	defaultIDDBName                 = "novus_id"
+	defaultSDDBName                 = "novus_sd"
+	defaultSystemDBUser             = "novus_panel"
+	defaultIdentityDBUser           = "novus_id"
+	defaultAgentAMD64URL            = "https://github.com/SGC-NOVUS/agent/releases/latest/download/novus-agent-linux-amd64"
+	defaultAgentARM64URL            = "https://github.com/SGC-NOVUS/agent/releases/latest/download/novus-agent-linux-arm64"
+	agentBinaryURLEnv               = "NOVUS_INSTALLER_AGENT_BINARY_URL"
+	defaultPanelReleaseURL          = "https://github.com/SGC-NOVUS/panel/releases/latest/download/panel.zip"
+	panelReleaseURLEnv              = "NOVUS_INSTALLER_PANEL_RELEASE_URL"
+	panelGithubPATEnv               = "NOVUS_INSTALLER_GITHUB_PAT"
+	installerModuleRegistryURLEnv   = "NOVUS_INSTALLER_MODULE_REGISTRY_URL"
+	installerModuleBootstrapPoolEnv = "NOVUS_INSTALLER_MODULE_BOOTSTRAP_POOL"
+	defaultModuleRegistryURL        = "https://raw.githubusercontent.com/SGC-NOVUS/modules/main/registry/index.json"
+	defaultModuleBootstrapPool      = "overview,users,profile,security,settings,monitoring,files,services,websites,databases,scheduler,terminal,backups"
+	panelInstallRoot                = "/www/panel"
+	panelPublicRoot                 = "/www/panel/public"
+	panelEnvPath                    = "/www/panel/.env"
+	panelSecretsDir                 = "/etc/novus/secrets"
+	panelSecretsEnvPath             = "/etc/novus/secrets/panel-novus.env"
+	moduleRegistryPublicKeysPath    = "/etc/novus/secrets/module_registry_public_keys.json"
+	moduleRegistrySignatureKeyID    = "sgc-novus-modules"
+	masterKeyFilePath               = "/etc/novus/secrets/master.key"
+	pendingMasterKeyPath            = "/etc/novus/secrets/master.key.next"
+	cloudflareSharedSecret          = "/etc/novus/secrets/cloudflare_kms_shared_secret"
+	nginxSitePath                   = "/etc/nginx/sites-available/novus-installer.conf"
+	nginxSiteEnabledPath            = "/etc/nginx/sites-enabled/novus-installer.conf"
+	manifestDir                     = "/etc/novus"
+	sslAssetDir                     = "/etc/novus/ssl"
+	manifestPath                    = "/etc/novus/manifest.json"
+	panelArchivePath                = "/tmp/panel.zip"
+	agentDownloadPath               = "/tmp/novus-agent"
+	cloudflareCredsPath             = "/root/.secrets/certbot/cloudflare.ini"
+	localHealthCheckURL             = "http://127.0.0.1/"
+	defaultDryRunDelay              = time.Second
+	healthCheckTimeout              = 5 * time.Second
+	minPanelArchiveBytes            = int64(10 * 1024)
+	minAgentBinaryBytes             = int64(1024)
 
 	// defaultPTYStepTimeout is the maximum wall-clock time a single install
 	// step may spend in its PTY command before the context is cancelled.
@@ -901,17 +899,9 @@ func (r *Runner) buildInstallSteps(request SetupRequest, domain string, platform
 				}
 				req.GitHubPAT = pat
 
-				panelURL := runner.panelReleaseURL
+				panelURL := strings.TrimSpace(runner.panelReleaseURL)
 				if strings.TrimSpace(panelURL) == "" {
-					// Build URL using the resolved PAT.
-					ref := strings.TrimSpace(os.Getenv("NOVUS_INSTALLER_PANEL_CORE_REF"))
-					if ref == "" {
-						ref = "main"
-					}
-					panelURL = fmt.Sprintf("https://api.github.com/repos/%s/zipball/%s", panelCoreRepo, url.PathEscape(ref))
-				}
-				if strings.TrimSpace(panelURL) == "" {
-					return fmt.Errorf("panel_release_url_missing: set NOVUS_INSTALLER_PANEL_RELEASE_URL or provide github_pat for private SGC-NOVUS/panel-core access")
+					return fmt.Errorf("panel_release_url_missing: set NOVUS_INSTALLER_PANEL_RELEASE_URL")
 				}
 				return runner.runPTYCommand(ctx, panelDeploymentCommand(panelURL, req.GitHubPAT))
 			},
@@ -1995,6 +1985,8 @@ func customPrivateKeyPath(domain string) string {
 
 func renderPanelEnvironment(req SetupRequest, appURL string, appKey string, masterKey string, sharedSecret string) string {
 	integrations := integrationFieldLookup(req.normalizedIntegrations())
+	moduleRegistryURL := resolveInstallerModuleRegistryURL()
+	moduleBootstrapPool := resolveInstallerModuleBootstrapPool()
 
 	lines := []string{
 		"APP_NAME=\"SGC-NOVUS OS\"",
@@ -2055,10 +2047,16 @@ func renderPanelEnvironment(req SetupRequest, appURL string, appKey string, mast
 		"STEAM_WEB_API_KEY=" + quoteEnvValue(integrationField(integrations, "steam", "steam_web_api_key")),
 		"NOVUS_CLOUDFLARE_KMS_WORKER_URL=" + quoteEnvValue(strings.TrimSpace(req.CloudflareKMS.WorkerURL)),
 		"NOVUS_CLOUDFLARE_KMS_SHARED_SECRET_FILE=" + quoteEnvValue(cloudflareSharedSecret),
+		"MODULE_REGISTRY_ENABLED=" + quoteEnvValue(strconv.FormatBool(moduleRegistryURL != "")),
+		"MODULE_REGISTRY_URL=" + quoteEnvValue(moduleRegistryURL),
 		"MODULE_REGISTRY_SIGNATURE_KEYS_FILE=" + quoteEnvValue(moduleRegistryPublicKeysPath),
 		"MODULE_REGISTRY_SIGNATURE_KEY_ALLOWLIST=" + quoteEnvValue(moduleRegistrySignatureKeyID),
 		"MODULE_REGISTRY_SIGNATURE_DEFAULT_KEY_ID=" + quoteEnvValue(moduleRegistrySignatureKeyID),
 		"MODULE_REGISTRY_SIGNATURE_ALLOW_DEFAULT_FALLBACK=" + quoteEnvValue(strconv.FormatBool(false)),
+	}
+
+	if moduleBootstrapPool != "" {
+		lines = append(lines, "MODULE_REGISTRY_ALLOWED_MODULES="+quoteEnvValue(moduleBootstrapPool))
 	}
 
 	if req.effectiveMasterKeyBackend() == "tier2_cloudflare_zero_disk_kms" && sharedSecret != "" {
@@ -2066,6 +2064,48 @@ func renderPanelEnvironment(req SetupRequest, appURL string, appKey string, mast
 	}
 
 	return strings.Join(lines, "\n") + "\n"
+}
+
+func resolveInstallerModuleRegistryURL() string {
+	if value := strings.TrimSpace(os.Getenv(installerModuleRegistryURLEnv)); value != "" {
+		return value
+	}
+	if value := strings.TrimSpace(os.Getenv("MODULE_REGISTRY_URL")); value != "" {
+		return value
+	}
+	return defaultModuleRegistryURL
+}
+
+func resolveInstallerModuleBootstrapPool() string {
+	raw := strings.TrimSpace(os.Getenv(installerModuleBootstrapPoolEnv))
+	if raw == "" {
+		raw = strings.TrimSpace(os.Getenv("MODULE_REGISTRY_ALLOWED_MODULES"))
+	}
+	if raw == "" {
+		raw = defaultModuleBootstrapPool
+	}
+
+	normalized := strings.ToLower(strings.TrimSpace(raw))
+	if normalized == "all" || normalized == "*" || normalized == "none" {
+		return ""
+	}
+
+	items := strings.Split(raw, ",")
+	seen := make(map[string]struct{}, len(items))
+	out := make([]string, 0, len(items))
+	for _, item := range items {
+		slug := strings.ToLower(strings.TrimSpace(item))
+		if slug == "" {
+			continue
+		}
+		if _, ok := seen[slug]; ok {
+			continue
+		}
+		seen[slug] = struct{}{}
+		out = append(out, slug)
+	}
+
+	return strings.Join(out, ",")
 }
 
 func renderModuleRegistryPublicKeysFile() ([]byte, error) {

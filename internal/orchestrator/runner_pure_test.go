@@ -366,8 +366,8 @@ func TestRenderModuleRegistryPublicKeysFile(t *testing.T) {
 
 func TestResolvePanelReleaseURL(t *testing.T) {
 	t.Setenv(panelReleaseURLEnv, "")
-	if resolvePanelReleaseURL() != "" {
-		t.Error("default release url must be empty (no public repo fallback)")
+	if resolvePanelReleaseURL() != defaultPanelReleaseURL {
+		t.Error("default release url must use public panel release asset")
 	}
 	t.Setenv(panelReleaseURLEnv, "https://custom/panel.zip")
 	if resolvePanelReleaseURL() != "https://custom/panel.zip" {

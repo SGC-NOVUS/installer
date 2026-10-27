@@ -3,7 +3,6 @@ package orchestrator
 import (
 	"bufio"
 	"fmt"
-	"net/url"
 	"os"
 	"runtime"
 	"strconv"
@@ -235,21 +234,12 @@ func resolveAgentBinaryURL() string {
 }
 
 // resolvePanelReleaseURL returns the panel release archive URL.
-// It prefers NOVUS_INSTALLER_PANEL_RELEASE_URL, then builds a GitHub API URL
-// using PAT from NOVUS_INSTALLER_GITHUB_PAT.
+// It prefers NOVUS_INSTALLER_PANEL_RELEASE_URL and falls back to the
+// public SGC-NOVUS/panel release asset.
 func resolvePanelReleaseURL() string {
 	if value := strings.TrimSpace(os.Getenv(panelReleaseURLEnv)); value != "" {
 		return value
 	}
 
-	pat := strings.TrimSpace(os.Getenv(panelGithubPATEnv))
-	if pat != "" {
-		ref := strings.TrimSpace(os.Getenv("NOVUS_INSTALLER_PANEL_CORE_REF"))
-		if ref == "" {
-			ref = "main"
-		}
-		return fmt.Sprintf("https://api.github.com/repos/%s/zipball/%s", panelCoreRepo, url.PathEscape(ref))
-	}
-
-	return ""
+	return defaultPanelReleaseURL
 }

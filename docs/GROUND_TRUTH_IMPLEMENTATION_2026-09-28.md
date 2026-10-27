@@ -46,10 +46,10 @@ The session cookie has no `Secure` attribute in the current server implementatio
 
 | Variable | Type/default | Where used | Criticality |
 | --- | --- | --- | --- |
-| `NOVUS_INSTALLER_GITHUB_PAT` | GitHub PAT; empty/default prompt path | Panel release resolution and setup request | Feature-critical for private Panel archive acquisition |
-| `NOVUS_INSTALLER_PANEL_RELEASE_URL` | URL; empty unless overridden | `resolvePanelReleaseURL()` | Feature-critical when no PAT-backed URL is available |
-| `NOVUS_INSTALLER_PANEL_CORE_REF` | string `main` | PAT-backed GitHub API zipball URL | Feature-critical only with PAT source |
+| `NOVUS_INSTALLER_PANEL_RELEASE_URL` | URL; defaults to public panel release asset | `resolvePanelReleaseURL()` | Feature-critical for Panel archive acquisition |
 | `NOVUS_INSTALLER_AGENT_BINARY_URL` | URL; architecture-specific GitHub release defaults | `resolveAgentBinaryURL()` | Feature-critical for Agent binary acquisition |
+| `NOVUS_INSTALLER_MODULE_REGISTRY_URL` | URL; defaults to public modules registry index | `renderPanelEnvironment()` | Feature-critical for Module Registry bootstrap in panel |
+| `NOVUS_INSTALLER_MODULE_BOOTSTRAP_POOL` | CSV list (or `all`/`*`) | `renderPanelEnvironment()` | Governs default module bootstrap allowlist at first start |
 
 No environment variable controls listen address, preflight deadline, token length, Web cookie flags, or per-step deadline in this checkout.
 
